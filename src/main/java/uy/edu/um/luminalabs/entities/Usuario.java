@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 
 @Entity
@@ -30,9 +31,8 @@ public class Usuario {
     @Column(name = "nombre usuario")
     private String userName;
 
-
-
-
+    @Email(message = "Formato de correo electronico no valido")
+    private String userEmail;
 
 }
 
