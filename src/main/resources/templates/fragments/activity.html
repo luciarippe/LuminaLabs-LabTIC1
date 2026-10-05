@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+
+<!-- Imagen de la actividad. Mientras no haya fotos, un paisaje con un degrade que depende del id. -->
+<div th:fragment="media(activity, label)" class="media" th:classappend="${'media--' + (activity.id % 6)}">
+    <svg th:replace="~{fragments/layout :: landscape('')}"></svg>
+    <span class="media__label" th:if="${label != null}" th:text="${label}">Categoría</span>
+</div>
+
+<!-- Tarjeta del catalogo. "card" es un ActivityCard (actividad + precio desde + proxima fecha). -->
+<a th:fragment="card(card)" class="activity-card" th:href="@{/activities/{id}(id=${card.activity.id})}">
+    <div th:replace="~{fragments/activity :: media(${card.activity}, ${card.activity.location.name})}"></div>
+    <span class="activity-card__category" th:text="${card.activity.mainCategoryName}">Categoría</span>
+    <h3 class="activity-card__title" th:text="${card.activity.name}">Nombre de la actividad</h3>
+    <div class="activity-card__meta">
+        <span>
+            <svg th:replace="~{fragments/icons :: icon-sized('clock', 'icon--sm')}"></svg>
+            <span th:text="${card.activity.durationLabel}">2 h</span>
+        </span>
+        <span th:if="${card.hasUpcomingDates()}">
+            <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg>
+            <span th:text="|Próxima: ${#temporals.format(card.nextStart, 'd MMM')}|">Próxima: 12 oct</span>
+        </span>
+    </div>
+    <div class="activity-card__price" th:if="${card.hasUpcomingDates()}">
+        Desde <strong th:text="|$ ${#numbers.formatDecimal(card.fromPrice, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</strong> por persona
+    </div>
+    <div class="activity-card__unavailable" th:unless="${card.hasUpcomingDates()}">Sin fechas disponibles por ahora</div>
+</a>
+
+</body>
+</html>

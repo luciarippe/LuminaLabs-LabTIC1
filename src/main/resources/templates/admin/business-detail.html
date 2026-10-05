@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head(${business.legalName})}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar(${business.status.name() == 'PENDING'} ? 'pending' : 'businesses')}"></aside>
+
+    <main class="admin-main">
+        <div class="breadcrumb">
+            <a th:href="@{/admin/businesses}">Emprendimientos</a> /
+            <span th:text="${business.legalName}">Nombre</span>
+        </div>
+        <div class="admin-topbar">
+            <div>
+                <h1 th:text="${business.legalName}">Nombre</h1>
+                <p th:text="|${business.type.label} · Solicitud del ${#temporals.format(business.createdAt, 'dd/MM/yyyy HH:mm')}|">Empresa</p>
+            </div>
+            <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
+                  th:text="${business.status.label}">Pendiente</span>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="admin-detail-layout">
+            <div>
+                <section class="card">
+                    <div class="card__header"><h3>Datos del emprendimiento</h3></div>
+                    <dl class="data-list">
+                        <div><dt>Tipo</dt><dd th:text="${business.type.label}">Empresa</dd></div>
+                        <div><dt th:text="${business.type.identifierLabel}">RUT</dt><dd th:text="${business.identifier}">123</dd></div>
+                        <div><dt>Correo de contacto</dt><dd th:text="${business.contactEmail}">a@b.com</dd></div>
+                        <div><dt>Teléfono</dt><dd th:text="${business.contactPhone}">099</dd></div>
+                        <div><dt>Banco</dt><dd th:text="${business.bankName}">BROU</dd></div>
+                        <div><dt>Número de cuenta</dt><dd th:text="${business.bankAccountNumber}">000</dd></div>
+                        <div class="span-2"><dt>Descripción de los servicios</dt><dd th:text="${business.description}">Texto</dd></div>
+                        <div class="span-2">
+                            <dt>Localidades</dt>
+                            <dd class="chip-list" style="margin-top: 6px">
+                                <span class="chip" th:each="location : ${business.locations}"
+                                      th:text="|${location.name} · ${location.department.label}|">Localidad</span>
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <section class="card card--flush">
+                    <div class="card__header"><h3>Prestadores asociados</h3></div>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr><th>Nombre</th><th>Usuario</th><th>Correo</th></tr></thead>
+                            <tbody>
+                            <tr th:each="provider : ${business.providers}">
+                                <td class="cell-title" th:text="${provider.fullName}">Nombre</td>
+                                <td th:text="${provider.username}">usuario</td>
+                                <td th:text="${provider.email}">correo</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Acciones disponibles segun el estado (CU-06 y CU-11) -->
+            <aside class="card action-panel">
+                <div class="card__header"><h3>Acciones</h3></div>
+
+                <div class="reason-box" th:if="${business.statusReason}" style="margin-bottom: 16px">
+                    <strong th:text="${business.status.name() == 'DENIED'} ? 'Motivo del rechazo:' : 'Motivo de la suspensión:'">Motivo:</strong>
+                    <span th:text="${business.statusReason}"></span>
+                </div>
+
+                <th:block th:if="${business.status.name() == 'PENDING'}">
+                    <form th:action="@{/admin/businesses/{id}/approve(id=${business.id})}" method="post">
+                        <p class="muted small" style="margin: 0">Al aprobarlo, sus prestadores podrán ingresar y publicar actividades.</p>
+                        <button type="submit" class="btn btn--primary btn--block">Aprobar emprendimiento</button>
+                    </form>
+                    <form th:action="@{/admin/businesses/{id}/deny(id=${business.id})}" method="post">
+                        <div class="field">
+                            <label for="deny-reason">Motivo del rechazo</label>
+                            <textarea class="textarea" id="deny-reason" name="reason" required maxlength="1000"
+                                      placeholder="Se enviará al prestador para que pueda corregir los datos."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn--danger btn--block">Denegar solicitud</button>
+                    </form>
+                </th:block>
+
+                <form th:if="${business.status.name() == 'APPROVED'}"
+                      th:action="@{/admin/businesses/{id}/suspend(id=${business.id})}" method="post">
+                    <p class="muted small" style="margin: 0">Sus actividades dejarán de mostrarse y sus prestadores no podrán publicar.</p>
+                    <div class="field">
+                        <label for="suspend-reason">Motivo de la suspensión</label>
+                        <textarea class="textarea" id="suspend-reason" name="reason" required maxlength="1000"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn--danger btn--block">Suspender emprendimiento</button>
+                </form>
+
+                <form th:if="${business.status.name() == 'SUSPENDED'}"
+                      th:action="@{/admin/businesses/{id}/reactivate(id=${business.id})}" method="post">
+                    <p class="muted small" style="margin: 0">Volverá a estar aprobado y sus actividades se mostrarán de nuevo.</p>
+                    <button type="submit" class="btn btn--primary btn--block">Reactivar emprendimiento</button>
+                </form>
+
+                <p class="muted small" th:if="${business.status.name() == 'DENIED'}" style="margin: 0">
+                    El prestador puede volver a postular el emprendimiento con los datos corregidos.
+                </p>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -44,4 +44,10 @@ public abstract class User {
 
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
+
+    public abstract Role getRole();
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }

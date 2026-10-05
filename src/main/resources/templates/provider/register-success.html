@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Solicitud recibida')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="card result-card">
+        <div class="result-card__icon"><svg th:replace="~{fragments/icons :: icon-sized('check', 'icon--lg')}"></svg></div>
+        <h1>¡Recibimos tu solicitud!</h1>
+        <p class="muted">
+            Registramos <strong th:text="${businessName}">Emprendimiento</strong> y quedó
+            <span class="badge badge--pending">Pendiente</span> de aprobación.
+        </p>
+        <ol class="timeline">
+            <li><strong>Revisión</strong><span>Un administrador de Uruguay Mnatural verificará los datos.</span></li>
+            <li><strong>Aviso por correo</strong><span th:text="|Te escribiremos a ${email} con el resultado.|">Te escribiremos con el resultado.</span></li>
+            <li><strong>Ingreso a la plataforma</strong><span>Cuando sea aprobado, vas a poder iniciar sesión con tu usuario.</span></li>
+        </ol>
+        <a class="btn btn--primary" th:href="@{/}">Volver al inicio</a>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

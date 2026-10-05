@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+<!-- Iconos de linea. Uso: <svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg>
+     El segundo parametro es una clase de tamano opcional: '' (20px), 'icon--sm' (16px) o 'icon--lg' (28px). -->
+
+<svg th:fragment="icon-sized(name, size)" th:class="|icon ${size}|" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <th:block th:switch="${name}">
+        <g th:case="'search'"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g>
+        <g th:case="'pin'"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></g>
+        <g th:case="'calendar'"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></g>
+        <g th:case="'clock'"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g>
+        <g th:case="'language'"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></g>
+        <g th:case="'user'"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></g>
+        <g th:case="'users'"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></g>
+        <g th:case="'accessibility'"><circle cx="12" cy="4.5" r="1.5"/><path d="M5 8.5 12 10l7-1.5M12 10v4M9 21l3-7 3 7"/></g>
+        <g th:case="'check'"><path d="m5 12.5 4.5 4.5L19 7"/></g>
+        <g th:case="'info'"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></g>
+        <g th:case="'arrow-right'"><path d="M5 12h14M13 6l6 6-6 6"/></g>
+        <g th:case="'building'"><path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M3 21h18M8 8h3M8 12h3M8 16h3"/></g>
+        <g th:case="'shield'"><path d="M12 3 19 6v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/><path d="m9 12 2 2 4-4"/></g>
+        <g th:case="'lock'"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></g>
+        <g th:case="'star'"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></g>
+        <g th:case="'compass'"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></g>
+        <g th:case="'grid'"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></g>
+        <g th:case="'inbox'"><path d="M3 13h5l1.5 3h5l1.5-3h5"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></g>
+        <g th:case="'external'"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></g>
+        <g th:case="'mail'"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></g>
+        <g th:case="'alert'"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/></g>
+        <g th:case="*"><circle cx="12" cy="12" r="9"/></g>
+    </th:block>
+</svg>
+</body>
+</html>

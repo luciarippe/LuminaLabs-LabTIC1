@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Fragmentos compartidos por las paginas publicas.
+     header(true) muestra el buscador en el encabezado; header(false) lo oculta (ej. la portada, que tiene el suyo). -->
+
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · Uruguay Mnatural'">Uruguay Mnatural</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+
+<body>
+
+<header th:fragment="header(showSearch)" class="site-header">
+    <div class="container site-header__inner">
+        <a class="brand" th:href="@{/}">
+            <img th:src="@{/images/logo.svg}" alt="">
+            <span>Uruguay <strong>Mnatural</strong></span>
+        </a>
+
+        <form class="header-search" th:if="${showSearch}" th:action="@{/activities}" method="get" role="search">
+            <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg>
+            <label class="visually-hidden" for="header-q">Buscar experiencias</label>
+            <input type="search" id="header-q" name="q" th:value="${param.q != null ? param.q[0] : ''}" placeholder="Buscar experiencias o destinos">
+        </form>
+
+        <nav class="site-nav" aria-label="Principal">
+            <a th:href="@{/activities}">Explorar</a>
+            <th:block th:if="${currentUser == null}">
+                <a th:href="@{/register/provider}">Ofrecé experiencias</a>
+                <a th:href="@{/login}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> Iniciar sesión
+                </a>
+                <a class="btn btn--dark btn--sm" th:href="@{/register}">Crear cuenta</a>
+            </th:block>
+            <th:block th:if="${currentUser != null}">
+                <a th:if="${currentUser.admin}" th:href="@{/admin}">Administración</a>
+                <a th:if="${currentUser.provider}" th:href="@{/provider}">Mi espacio</a>
+                <span class="user-chip">
+                    <span class="avatar" th:text="${#strings.substring(currentUser.displayName, 0, 1)}">A</span>
+                    <span th:text="${currentUser.displayName}">Nombre</span>
+                </span>
+                <form class="inline-form" th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn--ghost btn--sm">Salir</button>
+                </form>
+            </th:block>
+        </nav>
+    </div>
+</header>
+
+<th:block th:fragment="flash">
+    <div class="alert alert--success" role="status" th:if="${successMessage}" th:text="${successMessage}"></div>
+    <div class="alert alert--error" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+</th:block>
+
+<footer th:fragment="footer" class="site-footer">
+    <div class="container">
+        <div class="site-footer__grid">
+            <div>
+                <a class="brand" th:href="@{/}">
+                    <img th:src="@{/images/logo.svg}" alt="">
+                    <span>Uruguay <strong>Mnatural</strong></span>
+                </a>
+                <p class="site-footer__about">La oferta turística de todo el país en un solo lugar, con emprendimientos verificados.</p>
+            </div>
+            <div>
+                <h4>Explorar</h4>
+                <ul>
+                    <li><a th:href="@{/activities}">Todas las experiencias</a></li>
+                    <li><a th:href="@{/activities(department='ROCHA')}">Rocha</a></li>
+                    <li><a th:href="@{/activities(department='MALDONADO')}">Maldonado</a></li>
+                    <li><a th:href="@{/activities(department='COLONIA')}">Colonia</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Prestadores</h4>
+                <ul>
+                    <li><a th:href="@{/register/provider}">Registrar un emprendimiento</a></li>
+                    <li><a th:href="@{/login}">Iniciar sesión</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="site-footer__bottom">
+            <span>© 2026 Uruguay Mnatural · Ministerio de Turismo</span>
+            <span>Desarrollado por Lúmina Labs</span>
+        </div>
+    </div>
+</footer>
+
+<!-- Paisaje de lineas suaves, usado en el hero y como imagen de las actividades -->
+<svg th:fragment="landscape(cssClass)" th:class="${cssClass}" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 120 C 70 80, 130 85, 200 110 S 330 70, 400 85 L400 200 L0 200 Z" fill="#fff" opacity=".10"/>
+    <path d="M0 150 C 80 120, 160 125, 230 145 S 340 120, 400 130 L400 200 L0 200 Z" fill="#fff" opacity=".12"/>
+    <path d="M0 180 C 100 160, 190 165, 270 178 S 360 170, 400 168 L400 200 L0 200 Z" fill="#000" opacity=".12"/>
+</svg>
+
+</body>
+</html>

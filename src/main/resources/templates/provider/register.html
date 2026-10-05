@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Registrar emprendimiento')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="page-header">
+        <span class="eyebrow">Para prestadores</span>
+        <h1>Registrá tu emprendimiento</h1>
+        <p>Completá los datos y nuestro equipo revisará tu solicitud. Cuando sea aprobada vas a poder
+            ingresar y publicar tus actividades.</p>
+    </div>
+
+    <div class="register-layout">
+        <form th:action="@{/register/provider}" th:object="${form}" method="post" novalidate>
+
+            <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                <div>
+                    <strong>Revisá los campos marcados.</strong>
+                    <span th:if="${#fields.errors('*').size() == 1}">Hay un dato para corregir.</span>
+                    <span th:unless="${#fields.errors('*').size() == 1}"
+                          th:text="|Hay ${#fields.errors('*').size()} datos para corregir.|"></span>
+                </div>
+            </div>
+
+            <!-- 1. Tipo -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number">1</span>
+                    <h2>Tipo de emprendimiento</h2>
+                </div>
+                <p class="form-section__intro">Las empresas se identifican con RUT y los particulares con cédula.</p>
+                <div class="option-cards" role="radiogroup" aria-label="Tipo de emprendimiento">
+                    <label class="option-card" th:each="type : ${businessTypes}">
+                        <input type="radio" th:field="*{businessType}" th:value="${type}">
+                        <span class="option-card__body">
+                            <span class="option-card__icon">
+                                <svg th:replace="~{fragments/icons :: icon-sized(${type.name() == 'COMPANY'} ? 'building' : 'user', '')}"></svg>
+                            </span>
+                            <span>
+                                <span class="option-card__title" th:text="${type.label}">Empresa</span>
+                                <span class="option-card__text"
+                                      th:text="${type.name() == 'COMPANY'} ? 'Sociedad o empresa con RUT.' : 'Persona que ofrece una actividad por su cuenta.'">Texto</span>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+                <span class="field-error" th:if="${#fields.hasErrors('businessType')}" th:errors="*{businessType}"></span>
+            </section>
+
+            <!-- 2. Emprendimiento -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number">2</span>
+                    <h2>Datos del emprendimiento</h2>
+                </div>
+                <p class="form-section__intro">Esta información se mostrará a los turistas junto a tus actividades.</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="legalName">Razón social o nombre</label>
+                        <input class="input" type="text" th:field="*{legalName}" th:errorclass="is-invalid" maxlength="150">
+                        <span class="field-error" th:if="${#fields.hasErrors('legalName')}" th:errors="*{legalName}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="identifier" id="identifier-label">RUT o cédula</label>
+                        <input class="input" type="text" th:field="*{identifier}" th:errorclass="is-invalid" inputmode="numeric">
+                        <span class="hint" id="identifier-hint">Solo números; podés incluir puntos o guiones.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('identifier')}" th:errors="*{identifier}"></span>
+                    </div>
+                    <div class="field span-2">
+                        <label for="description">Descripción de los servicios</label>
+                        <textarea class="textarea" th:field="*{description}" th:errorclass="is-invalid" maxlength="2000"
+                                  placeholder="Contá qué experiencias ofrecés, a quién están dirigidas y qué las hace especiales."></textarea>
+                        <span class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+                    </div>
+                    <div class="field span-2" th:classappend="${#fields.hasErrors('locationIds')} ? 'is-invalid'">
+                        <span class="label">Localidades donde operás</span>
+                        <div class="locality-picker" data-locality-picker>
+                            <!-- Se completa con JavaScript a partir de los checkbox marcados -->
+                            <div class="locality-picker__selected" aria-live="polite">
+                                <div class="locality-picker__selected-title">
+                                    Seleccionadas <span class="count-pill" data-locality-count>0</span>
+                                </div>
+                                <div class="chip-list" data-locality-selected></div>
+                                <span class="locality-picker__empty" data-locality-empty>Todavía no elegiste ninguna localidad. Marcalas en el listado de abajo.</span>
+                            </div>
+                            <div class="locality-picker__toolbar">
+                                <label class="visually-hidden" for="location-search">Buscar localidad</label>
+                                <input class="input" type="search" id="location-search" placeholder="Buscar localidad o departamento…" data-locality-search>
+                            </div>
+                            <div class="locality-picker__list">
+                                <div th:each="entry : ${locationsByDepartment}" th:attr="data-locality-group=${entry.key.label}">
+                                    <div class="locality-group__title" th:text="${entry.key.label}">Departamento</div>
+                                    <div class="locality-group__items">
+                                        <label class="check-chip" th:each="location : ${entry.value}">
+                                            <input type="checkbox" th:field="*{locationIds}" th:value="${location.id}"
+                                                   th:data-name="${location.name}" th:data-department="${entry.key.label}">
+                                            <span th:text="${location.name}">Localidad</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="field-error" th:if="${#fields.hasErrors('locationIds')}" th:errors="*{locationIds}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Contacto y banco -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number">3</span>
+                    <h2>Contacto y datos bancarios</h2>
+                </div>
+                <p class="form-section__intro">Los datos bancarios se usan para transferirte los pagos de las reservas. No se muestran públicamente.</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="contactEmail">Correo de contacto</label>
+                        <input class="input" type="email" th:field="*{contactEmail}" th:errorclass="is-invalid">
+                        <span class="field-error" th:if="${#fields.hasErrors('contactEmail')}" th:errors="*{contactEmail}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="contactPhone">Teléfono de contacto</label>
+                        <input class="input" type="tel" th:field="*{contactPhone}" th:errorclass="is-invalid" placeholder="099 123 456">
+                        <span class="field-error" th:if="${#fields.hasErrors('contactPhone')}" th:errors="*{contactPhone}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="bankName">Banco</label>
+                        <input class="input" type="text" th:field="*{bankName}" th:errorclass="is-invalid" placeholder="Ej.: BROU">
+                        <span class="field-error" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="bankAccountNumber">Número de cuenta</label>
+                        <input class="input" type="text" th:field="*{bankAccountNumber}" th:errorclass="is-invalid">
+                        <span class="field-error" th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Cuenta -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number">4</span>
+                    <h2>Tu cuenta de prestador</h2>
+                </div>
+                <p class="form-section__intro">Con estos datos vas a ingresar a la plataforma para gestionar tu emprendimiento.</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="firstName">Nombre</label>
+                        <input class="input" type="text" th:field="*{firstName}" th:errorclass="is-invalid" autocomplete="given-name">
+                        <span class="field-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="lastName">Apellido</label>
+                        <input class="input" type="text" th:field="*{lastName}" th:errorclass="is-invalid" autocomplete="family-name">
+                        <span class="field-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="birthDate">Fecha de nacimiento</label>
+                        <input class="input" type="date" th:field="*{birthDate}" th:errorclass="is-invalid" autocomplete="bday">
+                        <span class="field-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="username">Nombre de usuario</label>
+                        <input class="input" type="text" th:field="*{username}" th:errorclass="is-invalid" autocomplete="username">
+                        <span class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
+                    </div>
+                    <div class="field span-2">
+                        <label for="email">Correo electrónico</label>
+                        <input class="input" type="email" th:field="*{email}" th:errorclass="is-invalid" autocomplete="email">
+                        <span class="hint">Acá te avisaremos cuando tu solicitud sea revisada.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="password">Contraseña</label>
+                        <div class="input-group">
+                            <input class="input" type="password" th:field="*{password}" th:errorclass="is-invalid" autocomplete="new-password">
+                            <button type="button" class="input-group__action" data-toggle-password="password">Mostrar</button>
+                        </div>
+                        <span class="hint">Mínimo 8 caracteres.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="confirmPassword">Repetir contraseña</label>
+                        <input class="input" type="password" th:field="*{confirmPassword}" th:errorclass="is-invalid" autocomplete="new-password">
+                        <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="form-actions">
+                <span class="muted small">¿Ya tenés cuenta? <a th:href="@{/login}">Iniciá sesión</a></span>
+                <button type="submit" class="btn btn--primary btn--lg">Enviar solicitud</button>
+            </div>
+        </form>
+
+        <aside class="register-aside">
+            <div class="card">
+                <h3>¿Qué pasa después?</h3>
+                <ol class="timeline">
+                    <li><strong>Recibimos tu solicitud</strong><span>Queda pendiente de aprobación.</span></li>
+                    <li><strong>La revisamos</strong><span>Un administrador verifica los datos del emprendimiento.</span></li>
+                    <li><strong>Te avisamos por correo</strong><span>Si se aprueba, ya podés ingresar. Si no, te contamos el motivo.</span></li>
+                    <li><strong>Publicás tus actividades</strong><span>Cargás experiencias, fechas, precios y cupos.</span></li>
+                </ol>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+<!-- Menu lateral de la seccion de administracion. Uso: th:replace="~{fragments/admin :: sidebar('dashboard')}" -->
+<aside th:fragment="sidebar(active)" class="admin-sidebar">
+    <a class="brand" th:href="@{/admin}">
+        <img th:src="@{/images/logo.svg}" alt="">
+        <span>Uruguay <strong>Mnatural</strong></span>
+    </a>
+    <span class="admin-badge">Administración</span>
+
+    <nav class="admin-nav" aria-label="Administración">
+        <span class="admin-nav__label">General</span>
+        <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('grid', 'icon--sm')}"></svg> Panel
+        </a>
+        <span class="admin-nav__label">Emprendimientos</span>
+        <a th:href="@{/admin/businesses(status='PENDING')}" th:classappend="${active == 'pending'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('inbox', 'icon--sm')}"></svg> Solicitudes
+            <span class="admin-nav__count" th:if="${statusCounts.pending > 0}" th:text="${statusCounts.pending}">3</span>
+        </a>
+        <a th:href="@{/admin/businesses}" th:classappend="${active == 'businesses'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('building', 'icon--sm')}"></svg> Todos
+        </a>
+        <span class="admin-nav__label">Sitio</span>
+        <a th:href="@{/}">
+            <svg th:replace="~{fragments/icons :: icon-sized('external', 'icon--sm')}"></svg> Ver portal público
+        </a>
+    </nav>
+
+    <div class="admin-sidebar__footer">
+        <div class="admin-sidebar__user">
+            <span class="user-chip">
+                <span class="avatar" th:text="${#strings.substring(currentUser.displayName, 0, 1)}">A</span>
+                <span th:text="${currentUser.displayName}">Admin</span>
+            </span>
+            <form class="inline-form" th:action="@{/logout}" method="post">
+                <button type="submit" class="btn btn--ghost btn--sm">Salir</button>
+            </form>
+        </div>
+        <p class="admin-session-note">Por seguridad, la sesión se cierra tras 15 minutos de inactividad.</p>
+    </div>
+</aside>
+</body>
+</html>

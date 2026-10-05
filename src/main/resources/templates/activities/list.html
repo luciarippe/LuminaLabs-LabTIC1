@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Experiencias')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="catalog-layout">
+        <!-- Filtros (RF-13). Formulario GET: los filtros quedan en la URL y se pueden compartir. -->
+        <aside>
+            <form id="filters" class="filters" th:action="@{/activities}" th:object="${criteria}" method="get">
+                <h2>Filtros</h2>
+
+                <div class="filters__group">
+                    <label class="filters__title" for="f-q">Palabra clave</label>
+                    <input class="input" type="search" id="f-q" th:field="*{q}" placeholder="Ej.: kayak">
+                </div>
+
+                <div class="filters__group">
+                    <label class="filters__title" for="f-department">Departamento</label>
+                    <select class="select" id="f-department" th:field="*{department}">
+                        <option value="">Todos</option>
+                        <option th:each="department : ${departments}" th:value="${department}" th:text="${department.label}">Rocha</option>
+                    </select>
+                    <label class="filters__title" for="f-location">Localidad</label>
+                    <select class="select" id="f-location" th:field="*{locationId}">
+                        <option value="">Todas</option>
+                        <optgroup th:each="entry : ${locationsByDepartment}" th:label="${entry.key.label}">
+                            <option th:each="location : ${entry.value}" th:value="${location.id}" th:text="${location.name}">Localidad</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="filters__group">
+                    <span class="filters__title">Categoría</span>
+                    <div class="radio-list">
+                        <label><input type="radio" name="categoryId" value="" th:checked="${criteria.categoryId == null}"> Todas</label>
+                        <label th:each="category : ${categories}">
+                            <input type="radio" name="categoryId" th:value="${category.id}" th:checked="${criteria.categoryId == category.id}">
+                            <span th:text="${category.name}">Categoría</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filters__group">
+                    <span class="filters__title">Fechas</span>
+                    <div class="filters__row">
+                        <label class="visually-hidden" for="f-from">Desde</label>
+                        <input class="input" type="date" id="f-from" th:field="*{dateFrom}" title="Desde">
+                        <label class="visually-hidden" for="f-to">Hasta</label>
+                        <input class="input" type="date" id="f-to" th:field="*{dateTo}" title="Hasta">
+                    </div>
+                </div>
+
+                <div class="filters__group">
+                    <span class="filters__title">Precio por persona ($)</span>
+                    <div class="filters__row">
+                        <label class="visually-hidden" for="f-min">Mínimo</label>
+                        <input class="input" type="number" min="0" step="100" id="f-min" th:field="*{minPrice}" placeholder="Mín.">
+                        <label class="visually-hidden" for="f-max">Máximo</label>
+                        <input class="input" type="number" min="0" step="100" id="f-max" th:field="*{maxPrice}" placeholder="Máx.">
+                    </div>
+                </div>
+
+                <div class="filters__actions">
+                    <button type="submit" class="btn btn--dark btn--block">Aplicar filtros</button>
+                    <a class="btn btn--ghost btn--block" th:href="@{/activities}" th:if="${criteria.hasAnyFilter()}">Limpiar filtros</a>
+                </div>
+            </form>
+        </aside>
+
+        <section>
+            <div class="results-bar">
+                <div>
+                    <h1>Experiencias</h1>
+                    <p th:text="${results.size() == 1} ? '1 resultado' : |${results.size()} resultados|">12 resultados</p>
+                </div>
+                <label class="sort-select">
+                    Ordenar por
+                    <select class="select" name="sort" form="filters" data-auto-submit>
+                        <option value="RECOMMENDED" th:selected="${criteria.sort.name() == 'RECOMMENDED'}">Recomendadas</option>
+                        <option value="DATE" th:selected="${criteria.sort.name() == 'DATE'}">Próxima fecha</option>
+                        <option value="PRICE" th:selected="${criteria.sort.name() == 'PRICE'}">Menor precio</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="activity-grid activity-grid--3" th:unless="${results.isEmpty()}">
+                <th:block th:each="card : ${results}">
+                    <a th:replace="~{fragments/activity :: card(${card})}"></a>
+                </th:block>
+            </div>
+
+            <!-- CU-07 4a -->
+            <div class="card empty-state" th:if="${results.isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('search', '')}"></svg></div>
+                <h3>No encontramos experiencias con esos filtros</h3>
+                <p>Probá con otras fechas, otro destino o una palabra clave distinta.</p>
+                <a class="btn" th:href="@{/activities}">Ver todas las experiencias</a>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

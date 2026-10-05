@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Acceso denegado')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+<main class="container page">
+    <div class="card result-card">
+        <div class="result-card__icon result-card__icon--danger"><svg th:replace="~{fragments/icons :: icon-sized('lock', 'icon--lg')}"></svg></div>
+        <h1>No tenés acceso a esta sección</h1>
+        <p class="muted">Tu usuario no tiene permisos para ver esta página.</p>
+        <a class="btn btn--dark" th:href="@{/}">Volver al inicio</a>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

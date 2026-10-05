@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Mi espacio')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="page-header">
+        <span class="eyebrow">Espacio del prestador</span>
+        <h1 th:text="|¡Hola, ${currentUser.displayName}!|">¡Hola!</h1>
+        <p>Desde acá vas a gestionar tus emprendimientos, actividades y reservas.</p>
+    </div>
+
+    <h2>Mis emprendimientos</h2>
+    <div class="business-grid">
+        <article class="card business-card" th:each="business : ${businesses}">
+            <div class="business-card__top">
+                <div>
+                    <h3 th:text="${business.legalName}">Emprendimiento</h3>
+                    <span class="business-card__meta"
+                          th:text="|${business.type.label} · ${business.type.identifierLabel} ${business.identifier}|">Empresa · RUT</span>
+                </div>
+                <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
+                      th:text="${business.status.label}">Aprobado</span>
+            </div>
+            <p class="muted small" th:text="${business.description}">Descripción</p>
+            <div class="chip-list">
+                <span class="chip" th:each="location : ${business.locations}" th:text="${location.name}">Localidad</span>
+            </div>
+            <div class="reason-box" th:if="${business.statusReason}">
+                <strong>Motivo:</strong> <span th:text="${business.statusReason}"></span>
+            </div>
+        </article>
+    </div>
+
+    <div class="card" style="margin-top: 28px">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
+            <h3>Actividades y reservas</h3>
+            <p>Próximamente vas a poder publicar actividades, cargar fechas y ver tus reservas desde acá.</p>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

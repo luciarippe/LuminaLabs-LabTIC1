@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Emprendimientos')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar(${selectedStatus != null and selectedStatus.name() == 'PENDING'} ? 'pending' : 'businesses')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <h1>Emprendimientos</h1>
+                <p>Revisá las solicitudes y gestioná el estado de cada emprendimiento.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <nav class="tabs" aria-label="Filtrar por estado">
+            <a class="tab" th:href="@{/admin/businesses}" th:classappend="${selectedStatus == null} ? 'is-active'">
+                Todos <span class="tab__count" th:text="${statusCounts.total()}">0</span>
+            </a>
+            <a class="tab" th:each="status : ${statuses}"
+               th:href="@{/admin/businesses(status=${status})}"
+               th:classappend="${selectedStatus == status} ? 'is-active'">
+                <span th:text="${status.label}">Estado</span>
+                <span class="tab__count" th:text="${statusCounts.of(status)}">0</span>
+            </a>
+        </nav>
+
+        <section class="card card--flush">
+            <!-- Fragmento reutilizado en el panel principal -->
+            <div class="table-wrap" th:fragment="businessTable(businesses)" th:unless="${businesses.isEmpty()}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Emprendimiento</th>
+                        <th>Identificador</th>
+                        <th>Localidades</th>
+                        <th>Fecha de solicitud</th>
+                        <th>Estado</th>
+                        <th><span class="visually-hidden">Acciones</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="business : ${businesses}">
+                        <td>
+                            <span class="cell-title" th:text="${business.legalName}">Nombre</span>
+                            <span class="cell-sub" th:text="${business.type.label}">Empresa</span>
+                        </td>
+                        <td>
+                            <span th:text="${business.identifier}">123</span>
+                            <span class="cell-sub" th:text="${business.type.identifierLabel}">RUT</span>
+                        </td>
+                        <td>
+                            <div class="chip-list">
+                                <span class="chip" th:each="location, iter : ${business.locations}" th:if="${iter.index < 2}"
+                                      th:text="${location.name}">Localidad</span>
+                                <span class="chip" th:if="${business.locations.size() > 2}"
+                                      th:text="|+${business.locations.size() - 2}|">+1</span>
+                            </div>
+                        </td>
+                        <td th:text="${#temporals.format(business.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</td>
+                        <td>
+                            <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
+                                  th:text="${business.status.label}">Pendiente</span>
+                        </td>
+                        <td class="cell-actions">
+                            <a class="btn btn--sm" th:classappend="${business.status.name() == 'PENDING'} ? 'btn--primary'"
+                               th:href="@{/admin/businesses/{id}(id=${business.id})}"
+                               th:text="${business.status.name() == 'PENDING'} ? 'Revisar' : 'Ver detalle'">Ver</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="empty-state" th:if="${businesses.isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('search', '')}"></svg></div>
+                <h3>No hay emprendimientos</h3>
+                <p>No hay emprendimientos con este estado.</p>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

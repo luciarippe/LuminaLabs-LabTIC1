@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Experiencias en todo Uruguay')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(false)}"></header>
+
+<main>
+    <!-- Buscador principal (RF-13) -->
+    <section class="hero">
+        <svg th:replace="~{fragments/layout :: landscape('hero__landscape')}"></svg>
+        <div class="container hero__inner">
+            <h1>Experiencias únicas en todo Uruguay</h1>
+            <p class="hero__lead">Naturaleza, gastronomía, historia y aventura, ofrecidas por emprendimientos verificados de todo el país.</p>
+
+            <form class="search-bar" th:action="@{/activities}" method="get" role="search">
+                <div class="search-bar__field">
+                    <label for="q">Qué querés hacer</label>
+                    <input type="search" id="q" name="q" placeholder="Kayak, bodegas, cabalgatas…">
+                </div>
+                <div class="search-bar__field">
+                    <label for="department">Destino</label>
+                    <select id="department" name="department">
+                        <option value="">Todo el país</option>
+                        <option th:each="department : ${departments}" th:value="${department}" th:text="${department.label}">Rocha</option>
+                    </select>
+                </div>
+                <div class="search-bar__field">
+                    <label for="dateFrom">Desde</label>
+                    <input type="date" id="dateFrom" name="dateFrom">
+                </div>
+                <button type="submit" class="btn btn--primary btn--lg">
+                    <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg> Buscar
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <nav class="category-nav" aria-label="Categorías">
+        <div class="container category-nav__list">
+            <a th:href="@{/activities}">Todas</a>
+            <a th:each="category : ${categories}" th:href="@{/activities(categoryId=${category.id})}" th:text="${category.name}">Categoría</a>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            <div class="section__header">
+                <div>
+                    <h2>Próximas experiencias</h2>
+                    <p>Actividades con fechas disponibles en las próximas semanas.</p>
+                </div>
+                <a class="link-arrow" th:href="@{/activities}">
+                    Ver todas <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg>
+                </a>
+            </div>
+            <div class="activity-grid" th:unless="${featured.isEmpty()}">
+                <th:block th:each="card : ${featured}">
+                    <a th:replace="~{fragments/activity :: card(${card})}"></a>
+                </th:block>
+            </div>
+            <div class="empty-state" th:if="${featured.isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></div>
+                <h3>Todavía no hay experiencias publicadas</h3>
+                <p>Pronto vas a encontrar acá la oferta de todo el país.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section section--alt" th:unless="${destinations.isEmpty()}">
+        <div class="container">
+            <div class="section__header">
+                <div>
+                    <h2>Destinos</h2>
+                    <p>Explorá la oferta de cada departamento.</p>
+                </div>
+            </div>
+            <div class="destination-grid">
+                <a class="destination" th:each="destination, iter : ${destinations}"
+                   th:href="@{/activities(department=${destination.department})}">
+                    <div class="media" th:classappend="${'media--' + (iter.index % 6)}">
+                        <svg th:replace="~{fragments/layout :: landscape('')}"></svg>
+                    </div>
+                    <span class="destination__text">
+                        <strong th:text="${destination.department.label}">Rocha</strong>
+                        <span th:text="${destination.total == 1} ? '1 experiencia' : |${destination.total} experiencias|">3 experiencias</span>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="value-grid">
+                <div class="value">
+                    <span class="value__icon"><svg th:replace="~{fragments/icons :: icon-sized('shield', '')}"></svg></span>
+                    <div>
+                        <h3>Prestadores verificados</h3>
+                        <p>Cada emprendimiento es revisado por Uruguay Mnatural antes de publicar.</p>
+                    </div>
+                </div>
+                <div class="value">
+                    <span class="value__icon"><svg th:replace="~{fragments/icons :: icon-sized('lock', '')}"></svg></span>
+                    <div>
+                        <h3>Pago seguro</h3>
+                        <p>Tu reserva solo se confirma cuando el pago fue aprobado.</p>
+                    </div>
+                </div>
+                <div class="value">
+                    <span class="value__icon"><svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg></span>
+                    <div>
+                        <h3>Opiniones reales</h3>
+                        <p>Solo quienes participaron de una actividad pueden valorarla.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" style="padding-top: 0">
+        <div class="container">
+            <div class="provider-band">
+                <div>
+                    <h2>¿Ofrecés experiencias turísticas?</h2>
+                    <p>Sumá tu emprendimiento a Uruguay Mnatural y llegá a turistas de todo el país y del exterior.</p>
+                </div>
+                <a class="btn btn--lg" th:href="@{/register/provider}">Registrar mi emprendimiento</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

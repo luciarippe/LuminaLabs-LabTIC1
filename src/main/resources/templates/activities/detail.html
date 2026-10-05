@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head(${activity.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<!-- CU-07 pasos 5 a 7: detalle de una actividad -->
+<main class="container page">
+    <nav class="breadcrumb" aria-label="Ubicación">
+        <a th:href="@{/}">Inicio</a> /
+        <a th:href="@{/activities(department=${activity.location.department})}" th:text="${activity.location.department.label}">Rocha</a> /
+        <span th:text="${activity.name}">Actividad</span>
+    </nav>
+
+    <h1 class="detail-title" th:text="${activity.name}">Nombre de la actividad</h1>
+    <div class="detail-meta">
+        <span>
+            <svg th:replace="~{fragments/icons :: icon-sized('pin', 'icon--sm')}"></svg>
+            <span th:text="|${activity.location.name}, ${activity.location.department.label}|">La Paloma, Rocha</span>
+        </span>
+        <span class="verified">
+            <svg th:replace="~{fragments/icons :: icon-sized('shield', 'icon--sm')}"></svg>
+            <span th:text="${activity.business.legalName}">Emprendimiento</span>
+        </span>
+        <span class="chip-list">
+            <a class="chip" th:each="category : ${activity.categories}"
+               th:href="@{/activities(categoryId=${category.id})}" th:text="${category.name}">Categoría</a>
+        </span>
+    </div>
+
+    <div class="detail-media">
+        <div th:replace="~{fragments/activity :: media(${activity}, null)}"></div>
+    </div>
+
+    <div class="detail-layout">
+        <div>
+            <div class="facts">
+                <div class="fact">
+                    <svg th:replace="~{fragments/icons :: icon-sized('clock', '')}"></svg>
+                    <div><strong>Duración</strong><span th:text="${activity.durationLabel}">2 h</span></div>
+                </div>
+                <div class="fact">
+                    <svg th:replace="~{fragments/icons :: icon-sized('language', '')}"></svg>
+                    <div><strong>Idioma</strong><span th:text="${activity.language}">Español</span></div>
+                </div>
+                <div class="fact">
+                    <svg th:replace="~{fragments/icons :: icon-sized('user', '')}"></svg>
+                    <div>
+                        <strong>Edad mínima</strong>
+                        <span th:text="${activity.minimumAge != null} ? |${activity.minimumAge} años| : 'Apta para todas las edades'">12 años</span>
+                    </div>
+                </div>
+                <div class="fact" th:if="${activity.accessibility}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('accessibility', '')}"></svg>
+                    <div><strong>Accesibilidad</strong><span th:text="${activity.accessibility}">Texto</span></div>
+                </div>
+            </div>
+
+            <section class="detail-section">
+                <h2>Sobre esta experiencia</h2>
+                <p th:text="${activity.description}">Descripción</p>
+            </section>
+
+            <section class="detail-section" th:if="${activity.inclusions}">
+                <h2>Qué incluye</h2>
+                <p th:text="${activity.inclusions}">Incluye</p>
+            </section>
+
+            <section class="detail-section" th:if="${activity.equipment}">
+                <h2>Qué llevar</h2>
+                <p th:text="${activity.equipment}">Equipamiento</p>
+            </section>
+
+            <section class="detail-section" th:if="${activity.importantDetails}">
+                <h2>Información importante</h2>
+                <p th:text="${activity.importantDetails}">Detalles</p>
+            </section>
+
+            <section class="detail-section">
+                <h2>Punto de encuentro</h2>
+                <p th:text="|${activity.address} — ${activity.location.name}, ${activity.location.department.label}|">Dirección</p>
+            </section>
+
+            <!-- RF-10 -->
+            <section class="detail-section">
+                <h2>Política de cancelación</h2>
+                <p th:if="${activity.cancellationFeePercentage == 0}"
+                   th:text="|Cancelación gratuita hasta ${activity.cancellationDeadlineHours} horas antes del inicio. Después de ese plazo no hay devolución.|">Texto</p>
+                <p th:unless="${activity.cancellationFeePercentage == 0}"
+                   th:text="|Si cancelás hasta ${activity.cancellationDeadlineHours} horas antes del inicio, se te devuelve el monto menos un cargo del ${activity.cancellationFeePercentage}%. Después de ese plazo no hay devolución.|">Texto</p>
+            </section>
+
+            <section class="detail-section">
+                <h2>Organizado por</h2>
+                <div class="organizer">
+                    <span class="organizer__logo"><svg th:replace="~{fragments/icons :: icon-sized('building', '')}"></svg></span>
+                    <div>
+                        <strong th:text="${activity.business.legalName}">Emprendimiento</strong>
+                        <p class="muted small" style="margin: 2px 0 0" th:text="${activity.business.description}">Descripción</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Fechas disponibles y reserva -->
+        <aside class="card booking-card">
+            <div class="booking-card__price" th:if="${fromPrice != null}">
+                Desde
+                <strong th:text="|$ ${#numbers.formatDecimal(fromPrice, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</strong>
+                por persona
+            </div>
+
+            <h3 style="font-size: 1rem">Próximas fechas</h3>
+            <ul class="slot-list" th:unless="${slots.isEmpty()}">
+                <li th:each="slot : ${slots}" th:classappend="${slot.isBookableAt(now)} ? '' : 'is-unavailable'">
+                    <span>
+                        <span class="slot-list__date" th:text="${#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM')}">sábado 12 de octubre</span>
+                        <span class="slot-list__sub"
+                              th:text="${#temporals.format(slot.startTime, 'HH:mm') + ' · '
+                                        + (slot.soldOut ? 'Agotado' : (slot.availability == 1 ? '1 lugar' : slot.availability + ' lugares'))}">17:30 · 12 lugares</span>
+                    </span>
+                    <span class="slot-list__price" th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.900</span>
+                </li>
+            </ul>
+            <!-- CU-07 7a -->
+            <p class="muted" th:if="${slots.isEmpty()}">No hay fechas disponibles por el momento.</p>
+
+            <!-- CU-07 7b: para reservar hay que iniciar sesion -->
+            <th:block th:unless="${slots.isEmpty()}">
+                <a class="btn btn--primary btn--lg btn--block" th:if="${currentUser == null}" th:href="@{/login}">Iniciá sesión para reservar</a>
+                <button class="btn btn--primary btn--lg btn--block" th:if="${currentUser != null and currentUser.tourist}" disabled>Reservas disponibles próximamente</button>
+                <p class="booking-card__note" th:if="${currentUser != null and !currentUser.tourist}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('info', 'icon--sm')}"></svg>
+                    Solo las cuentas de turista pueden reservar.
+                </p>
+            </th:block>
+            <p class="booking-card__note">
+                <svg th:replace="~{fragments/icons :: icon-sized('lock', 'icon--sm')}"></svg>
+                La reserva se confirma cuando el pago es aprobado.
+            </p>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

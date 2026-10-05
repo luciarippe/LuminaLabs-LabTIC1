@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Iniciar sesión')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<!-- CU-14: un unico inicio de sesion para turistas, prestadores y administradores.
+     Despues de ingresar, cada rol va a su seccion (ver RoleBasedSuccessHandler). -->
+<main class="auth-wrap">
+    <div class="auth-card">
+        <h1>Iniciar sesión</h1>
+        <p class="muted">Ingresá con tu correo o tu nombre de usuario.</p>
+
+        <!-- CU-14 3a: mensaje generico, sin indicar que dato fallo -->
+        <div class="alert alert--error" role="alert" th:if="${param.error}">
+            Usuario o contraseña incorrectos.
+        </div>
+        <!-- CU-14 4a: prestador sin emprendimientos aprobados -->
+        <div class="alert alert--warning" role="alert" th:if="${param.status}" th:switch="${param.status[0]}">
+            <span th:case="'pending'">Tu emprendimiento todavía está <strong>pendiente de aprobación</strong>. Te avisaremos por correo cuando sea revisado.</span>
+            <span th:case="'denied'">La solicitud de tu emprendimiento fue <strong>denegada</strong>. Revisá el correo que te enviamos con el motivo.</span>
+            <span th:case="'suspended'">Tu emprendimiento está <strong>suspendido</strong>. Revisá el correo que te enviamos con el motivo.</span>
+            <span th:case="*">Tu cuenta no tiene emprendimientos aprobados.</span>
+        </div>
+        <div class="alert alert--success" role="status" th:if="${param.logout}">
+            Cerraste sesión correctamente.
+        </div>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <form th:action="@{/login}" method="post">
+            <div class="field">
+                <label for="username">Correo o nombre de usuario</label>
+                <input class="input" type="text" id="username" name="username" autocomplete="username" required autofocus>
+            </div>
+            <div class="field">
+                <label for="password">Contraseña</label>
+                <div class="input-group">
+                    <input class="input" type="password" id="password" name="password" autocomplete="current-password" required>
+                    <button type="button" class="input-group__action" data-toggle-password="password">Mostrar</button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn--primary btn--lg btn--block">Ingresar</button>
+        </form>
+
+        <div class="auth-card__footer">
+            <p>¿No tenés cuenta? <a th:href="@{/register}"><strong>Creá tu cuenta</strong></a></p>
+            <p class="muted">¿Sos prestador? Ingresá acá mismo con la cuenta de tu emprendimiento.
+                Si todavía no lo registraste, <a th:href="@{/register/provider}">registralo acá</a>.</p>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

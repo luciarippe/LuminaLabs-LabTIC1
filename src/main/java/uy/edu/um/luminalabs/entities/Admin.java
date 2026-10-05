@@ -14,4 +14,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 public class Admin extends User {
+
+    @Override
+    public Role getRole() {
+        return Role.ADMIN;
+    }
 }

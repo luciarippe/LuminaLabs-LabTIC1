@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Plantilla de todos los correos. Estilos en linea: los clientes de correo ignoran las hojas de estilo. -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${content.subject}">Uruguay Mnatural</title>
+</head>
+<body style="margin:0; padding:0; background:#f7f5ef; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1c2925;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f5ef; padding:32px 12px;">
+    <tr>
+        <td align="center">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+                <!-- Encabezado -->
+                <tr>
+                    <td style="padding:0 8px 20px; font-size:18px;">
+                        <span style="color:#e9a23b; font-size:22px;">&#9728;</span>
+                        Uruguay <strong style="color:#1f6b52;">Mnatural</strong>
+                    </td>
+                </tr>
+                <!-- Tarjeta -->
+                <tr>
+                    <td style="background:#ffffff; border:1px solid #e4e0d5; border-radius:14px; padding:36px 32px;">
+                        <h1 style="margin:0 0 20px; font-size:24px; line-height:1.25; color:#1c2925;" th:text="${content.title}">Título</h1>
+
+                        <p style="margin:0 0 16px; font-size:15px; line-height:1.6; color:#3b4a45;"
+                           th:each="paragraph : ${content.paragraphs}" th:text="${paragraph}">Texto</p>
+
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" th:if="${content.highlight != null}"
+                               style="margin:8px 0 20px;">
+                            <tr>
+                                <td style="background:#fbfaf6; border-left:3px solid #e9a23b; border-radius:6px; padding:14px 16px; font-size:14px; line-height:1.5;">
+                                    <strong th:text="${content.highlightLabel} + ':'">Motivo:</strong>
+                                    <span th:text="${content.highlight}">Detalle</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table role="presentation" cellpadding="0" cellspacing="0" th:if="${content.buttonUrl != null}" style="margin-top:8px;">
+                            <tr>
+                                <td style="background:#1f6b52; border-radius:8px;">
+                                    <a th:href="${content.buttonUrl}" th:text="${content.buttonLabel}"
+                                       style="display:inline-block; padding:12px 24px; color:#ffffff; font-weight:600; font-size:15px; text-decoration:none;">Botón</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <!-- Pie -->
+                <tr>
+                    <td style="padding:20px 8px 0; font-size:12px; line-height:1.5; color:#5d6a65;">
+                        Recibiste este correo porque tenés una cuenta en
+                        <a th:href="${baseUrl}" style="color:#1f6b52;">Uruguay Mnatural</a>.<br>
+                        Uruguay Mnatural · Ministerio de Turismo
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

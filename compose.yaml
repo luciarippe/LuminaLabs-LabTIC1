@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: luminalabs-db
+    environment:
+      POSTGRES_DB: luminalabs
+      POSTGRES_USER: lumina
+      POSTGRES_PASSWORD: lumina
+    # 5433 en la maquina: el 5432 puede estar ocupado por un PostgreSQL instalado localmente
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Servidor de correo de prueba: recibe todos los correos que manda la app (no los entrega a nadie)
+  # y los muestra en http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: luminalabs-mail
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  pgdata:

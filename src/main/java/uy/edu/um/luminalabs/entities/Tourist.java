@@ -17,4 +17,9 @@ import uy.edu.um.luminalabs.entities.User;
 @SuperBuilder
 public class Tourist extends User {
     // Más adelante: @OneToMany private List<Reservation> reservations;
+
+    @Override
+    public Role getRole() {
+        return Role.TOURIST;
+    }
 }

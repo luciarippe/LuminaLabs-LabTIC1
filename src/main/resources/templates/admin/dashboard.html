@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Panel de administración')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('dashboard')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <h1 th:text="|Hola, ${currentUser.displayName}|">Hola</h1>
+                <p>Resumen de los emprendimientos de la plataforma.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="stat-grid">
+            <a class="stat stat--highlight" th:href="@{/admin/businesses(status='PENDING')}">
+                <span class="stat__label">Pendientes <span class="badge badge--pending">Revisar</span></span>
+                <span class="stat__value" th:text="${statusCounts.pending}">0</span>
+            </a>
+            <a class="stat" th:href="@{/admin/businesses(status='APPROVED')}">
+                <span class="stat__label">Aprobados</span>
+                <span class="stat__value" th:text="${statusCounts.approved}">0</span>
+            </a>
+            <a class="stat" th:href="@{/admin/businesses(status='DENIED')}">
+                <span class="stat__label">Denegados</span>
+                <span class="stat__value" th:text="${statusCounts.denied}">0</span>
+            </a>
+            <a class="stat" th:href="@{/admin/businesses(status='SUSPENDED')}">
+                <span class="stat__label">Suspendidos</span>
+                <span class="stat__value" th:text="${statusCounts.suspended}">0</span>
+            </a>
+        </div>
+
+        <section class="card card--flush">
+            <div class="card__header">
+                <h2 style="font-size: 1.15rem">Solicitudes pendientes</h2>
+                <a class="btn btn--sm" th:href="@{/admin/businesses(status='PENDING')}" th:if="${!pendingBusinesses.isEmpty()}">Ver todas</a>
+            </div>
+            <div th:replace="~{admin/businesses :: businessTable(${pendingBusinesses})}"></div>
+            <div class="empty-state" th:if="${pendingBusinesses.isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('check', '')}"></svg></div>
+                <h3>Todo al día</h3>
+                <p>No hay solicitudes de emprendimientos pendientes de revisión.</p>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>
