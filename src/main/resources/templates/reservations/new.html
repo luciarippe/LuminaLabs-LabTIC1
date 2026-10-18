@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-01 pasos 2 y 3: datos de los participantes y confirmacion de la reserva -->
+<head th:replace="~{fragments/layout :: head('Reservar')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="breadcrumb">
+        <a th:href="@{/activities/{id}(id=${activity.id})}" th:text="${activity.name}">Actividad</a> / <span>Reservar</span>
+    </div>
+    <div class="page-header">
+        <span class="eyebrow">Tu reserva</span>
+        <h1 th:text="${activity.name}">Actividad</h1>
+        <p th:text="|${#strings.capitalize(#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM ''a las'' HH:mm'))} · ${activity.location.name}, ${activity.location.department.label}|">Fecha</p>
+    </div>
+
+    <div class="register-layout">
+        <div>
+            <!-- Cambiar la cantidad de personas vuelve a cargar la pagina con otra cantidad de filas -->
+            <form class="card quantity-bar" th:action="@{/reservations/new}" method="get">
+                <input type="hidden" name="slotId" th:value="${slot.id}">
+                <div class="field">
+                    <label for="participants-count">¿Cuántas personas van?</label>
+                    <input class="input" type="number" id="participants-count" name="participants"
+                           th:value="${participantCount}" min="1" th:max="${maxParticipants}">
+                    <span class="hint" th:text="|Quedan ${slot.availability} lugares para este horario.|">Quedan 12 lugares</span>
+                </div>
+                <button type="submit" class="btn btn--ghost">Cambiar</button>
+            </form>
+
+            <form th:action="@{/reservations}" th:object="${form}" method="post" novalidate>
+                <input type="hidden" th:field="*{slotId}">
+
+                <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                    <div><strong>Revisá los datos de los participantes.</strong></div>
+                </div>
+
+                <section class="form-section" th:each="participant, iter : *{participants}">
+                    <div class="form-section__title">
+                        <span class="step-number" th:text="${iter.count}">1</span>
+                        <h2 th:text="${iter.first} ? 'Participante 1 (vos)' : |Participante ${iter.count}|">Participante</h2>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label th:for="|participants${iter.index}.firstName|">Nombre</label>
+                            <input class="input" type="text" th:field="*{participants[__${iter.index}__].firstName}" th:errorclass="is-invalid" maxlength="100">
+                            <span class="field-error" th:if="${#fields.hasErrors('participants[__${iter.index}__].firstName')}"
+                                  th:errors="*{participants[__${iter.index}__].firstName}"></span>
+                        </div>
+                        <div class="field">
+                            <label th:for="|participants${iter.index}.lastName|">Apellido</label>
+                            <input class="input" type="text" th:field="*{participants[__${iter.index}__].lastName}" th:errorclass="is-invalid" maxlength="100">
+                            <span class="field-error" th:if="${#fields.hasErrors('participants[__${iter.index}__].lastName')}"
+                                  th:errors="*{participants[__${iter.index}__].lastName}"></span>
+                        </div>
+                        <div class="field">
+                            <label th:for="|participants${iter.index}.birthDate|">Fecha de nacimiento</label>
+                            <input class="input" type="date" th:field="*{participants[__${iter.index}__].birthDate}" th:errorclass="is-invalid">
+                            <span class="field-error" th:if="${#fields.hasErrors('participants[__${iter.index}__].birthDate')}"
+                                  th:errors="*{participants[__${iter.index}__].birthDate}"></span>
+                        </div>
+                    </div>
+                </section>
+                <span class="field-error" th:if="${#fields.hasErrors('participants')}" th:errors="*{participants}"></span>
+
+                <div class="form-actions">
+                    <a class="btn btn--ghost" th:href="@{/activities/{id}(id=${activity.id})}">Volver</a>
+                    <button type="submit" class="btn btn--primary btn--lg">Confirmar reserva</button>
+                </div>
+            </form>
+        </div>
+
+        <aside class="register-aside">
+            <div class="card">
+                <h3>Resumen</h3>
+                <dl class="summary-list">
+                    <div><dt>Precio por persona</dt><dd th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</dd></div>
+                    <div><dt>Personas</dt><dd th:text="${participantCount}">1</dd></div>
+                    <div class="summary-list__total"><dt>Total</dt><dd th:text="|$ ${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</dd></div>
+                </dl>
+                <p class="muted small" th:if="${activity.minimumAge != null}"
+                   th:text="|Edad mínima: ${activity.minimumAge} años el día de la actividad.|">Edad mínima</p>
+                <p class="muted small">Al confirmar te guardamos los lugares por 2 horas para que completes el pago.
+                    La reserva queda confirmada cuando el pago es aprobado.</p>
+                <p class="muted small" th:text="${activity.cancellationFeePercentage == 0}
+                        ? |Cancelación gratuita hasta ${activity.cancellationDeadlineHours} horas antes del inicio.|
+                        : |Si cancelás hasta ${activity.cancellationDeadlineHours} horas antes, se cobra un cargo del ${activity.cancellationFeePercentage} %. Después no hay devolución.|">Política</p>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

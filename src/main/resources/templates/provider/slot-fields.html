@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Campos de un slot (CU-04), compartidos por "Agregar horario" y "Modificar horario".
+     Se insertan dentro de un <form th:object="${slotForm}">. -->
+<body>
+<th:block th:fragment="fields">
+    <div class="alert alert--error" role="alert" th:if="${#fields.hasGlobalErrors()}">
+        <div th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</div>
+    </div>
+    <div class="field">
+        <label for="date">Fecha</label>
+        <input class="input" type="date" th:field="*{date}" th:errorclass="is-invalid">
+        <span class="field-error" th:if="${#fields.hasErrors('date')}" th:errors="*{date}"></span>
+    </div>
+    <div class="field">
+        <label for="time">Hora de inicio</label>
+        <input class="input" type="time" th:field="*{time}" th:errorclass="is-invalid">
+        <span class="field-error" th:if="${#fields.hasErrors('time')}" th:errors="*{time}"></span>
+    </div>
+    <div class="field">
+        <label for="price">Precio por persona ($)</label>
+        <input class="input" type="number" th:field="*{price}" th:errorclass="is-invalid" min="1" step="0.01">
+        <span class="field-error" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></span>
+    </div>
+    <div class="field">
+        <label for="maxCapacity">Capacidad máxima (personas)</label>
+        <input class="input" type="number" th:field="*{maxCapacity}" th:errorclass="is-invalid" min="1">
+        <span class="field-error" th:if="${#fields.hasErrors('maxCapacity')}" th:errors="*{maxCapacity}"></span>
+    </div>
+</th:block>
+</body>
+</html>

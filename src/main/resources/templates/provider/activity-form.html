@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-03: alta y modificacion de una actividad. "activity" es null en el alta. -->
+<head th:replace="~{fragments/layout :: head(${activity == null} ? 'Nueva actividad' : 'Editar actividad')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="breadcrumb">
+        <a th:href="@{/provider}">Mi espacio</a> /
+        <th:block th:if="${activity != null}">
+            <a th:href="@{/provider/activities/{id}(id=${activity.id})}" th:text="${activity.name}">Actividad</a> /
+        </th:block>
+        <span th:text="${activity == null} ? 'Nueva actividad' : 'Editar'">Nueva actividad</span>
+    </div>
+    <div class="page-header">
+        <span class="eyebrow">Espacio del prestador</span>
+        <h1 th:text="${activity == null} ? 'Publicar una actividad' : 'Editar actividad'">Publicar una actividad</h1>
+        <p th:if="${activity == null}">Al guardarla queda publicada en el portal. Después vas a cargar sus fechas, horarios y precios.</p>
+    </div>
+
+    <div class="register-layout">
+        <form th:action="${activity == null} ? @{/provider/activities/new} : @{/provider/activities/{id}/edit(id=${activity.id})}"
+              th:object="${form}" method="post" novalidate>
+
+            <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                <div>
+                    <strong>Revisá los campos marcados.</strong>
+                    <span th:if="${#fields.errors('*').size() == 1}">Hay un dato para corregir.</span>
+                    <span th:unless="${#fields.errors('*').size() == 1}"
+                          th:text="|Hay ${#fields.errors('*').size()} datos para corregir.|"></span>
+                </div>
+            </div>
+
+            <!-- 1. Emprendimiento (1a). Al editar no se cambia: va oculto. -->
+            <section class="form-section" th:if="${activity == null}">
+                <div class="form-section__title">
+                    <span class="step-number">1</span>
+                    <h2>Emprendimiento</h2>
+                </div>
+                <div class="field">
+                    <label for="businessId">¿De qué emprendimiento es la actividad?</label>
+                    <select class="select" th:field="*{businessId}" th:errorclass="is-invalid">
+                        <option value="" th:if="${businesses.size() > 1}">Elegí un emprendimiento</option>
+                        <option th:each="business : ${businesses}" th:value="${business.id}" th:text="${business.legalName}">Emprendimiento</option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('businessId')}" th:errors="*{businessId}"></span>
+                </div>
+            </section>
+            <input type="hidden" th:if="${activity != null}" th:field="*{businessId}">
+
+            <!-- 2. Datos generales -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number" th:text="${activity == null} ? 2 : 1">2</span>
+                    <h2>La experiencia</h2>
+                </div>
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label for="name">Nombre</label>
+                        <input class="input" type="text" th:field="*{name}" th:errorclass="is-invalid" maxlength="150"
+                               placeholder="Ej.: Kayak al atardecer en la Laguna de Rocha">
+                        <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+                    </div>
+                    <div class="field span-2">
+                        <label for="description">Descripción</label>
+                        <textarea class="textarea" th:field="*{description}" th:errorclass="is-invalid" maxlength="4000"
+                                  placeholder="Qué se hace, cómo es el recorrido, qué la hace especial."></textarea>
+                        <span class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="locationId">Localidad</label>
+                        <select class="select" th:field="*{locationId}" th:errorclass="is-invalid">
+                            <option value="">Elegí una localidad</option>
+                            <optgroup th:each="entry : ${locationsByDepartment}" th:label="${entry.key.label}">
+                                <option th:each="location : ${entry.value}" th:value="${location.id}" th:text="${location.name}">Localidad</option>
+                            </optgroup>
+                        </select>
+                        <span class="field-error" th:if="${#fields.hasErrors('locationId')}" th:errors="*{locationId}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="address">Dirección o punto de encuentro</label>
+                        <input class="input" type="text" th:field="*{address}" th:errorclass="is-invalid" maxlength="255">
+                        <span class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="durationMinutes">Duración (en minutos)</label>
+                        <input class="input" type="number" th:field="*{durationMinutes}" th:errorclass="is-invalid" min="10" step="5">
+                        <span class="hint">Ej.: 90 para una hora y media.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="language">Idioma</label>
+                        <input class="input" type="text" th:field="*{language}" th:errorclass="is-invalid" maxlength="255"
+                               placeholder="Ej.: Español, inglés">
+                        <span class="field-error" th:if="${#fields.hasErrors('language')}" th:errors="*{language}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="minimumAge">Edad mínima</label>
+                        <input class="input" type="number" th:field="*{minimumAge}" th:errorclass="is-invalid" min="1" max="99">
+                        <span class="hint">Dejalo vacío si no hay requisito de edad.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('minimumAge')}" th:errors="*{minimumAge}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Categorias (RF-08) -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number" th:text="${activity == null} ? 3 : 2">3</span>
+                    <h2>Categorías</h2>
+                </div>
+                <p class="form-section__intro">Ayudan a los turistas a encontrar tu actividad con los filtros del portal.
+                    Si no encontrás una adecuada, pedila a los administradores.</p>
+                <div class="chip-list">
+                    <label class="check-chip" th:each="category : ${categories}" th:title="${category.description}">
+                        <input type="checkbox" th:field="*{categoryIds}" th:value="${category.id}">
+                        <span th:text="${category.name}">Categoría</span>
+                    </label>
+                </div>
+                <span class="field-error" th:if="${#fields.hasErrors('categoryIds')}" th:errors="*{categoryIds}"></span>
+            </section>
+
+            <!-- 4. Que incluye, equipamiento (RF-09) y detalles -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number" th:text="${activity == null} ? 4 : 3">4</span>
+                    <h2>Qué tiene que saber el turista</h2>
+                </div>
+                <p class="form-section__intro">Todos estos campos son opcionales; los que completes se muestran en el detalle de la actividad.</p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="inclusions">Qué incluye</label>
+                        <textarea class="textarea" th:field="*{inclusions}" th:errorclass="is-invalid" maxlength="2000"
+                                  placeholder="Ej.: Kayak, remo, chaleco salvavidas y guía."></textarea>
+                        <span class="field-error" th:if="${#fields.hasErrors('inclusions')}" th:errors="*{inclusions}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="equipment">Equipamiento necesario</label>
+                        <textarea class="textarea" th:field="*{equipment}" th:errorclass="is-invalid" maxlength="1000"
+                                  placeholder="Lo que tiene que traer el turista. Ej.: calzado cerrado, agua."></textarea>
+                        <span class="field-error" th:if="${#fields.hasErrors('equipment')}" th:errors="*{equipment}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="accessibility">Accesibilidad</label>
+                        <textarea class="textarea" th:field="*{accessibility}" th:errorclass="is-invalid" maxlength="1000"></textarea>
+                        <span class="field-error" th:if="${#fields.hasErrors('accessibility')}" th:errors="*{accessibility}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="importantDetails">Detalles importantes</label>
+                        <textarea class="textarea" th:field="*{importantDetails}" th:errorclass="is-invalid" maxlength="2000"
+                                  placeholder="Ej.: Saber nadar. Se suspende por mal tiempo."></textarea>
+                        <span class="field-error" th:if="${#fields.hasErrors('importantDetails')}" th:errors="*{importantDetails}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Reserva y cancelacion (RF-10) -->
+            <section class="form-section">
+                <div class="form-section__title">
+                    <span class="step-number" th:text="${activity == null} ? 5 : 4">5</span>
+                    <h2>Reservas y cancelaciones</h2>
+                </div>
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label for="bookingCutoffMinutes">Se puede reservar hasta (minutos antes del inicio)</label>
+                        <input class="input" type="number" th:field="*{bookingCutoffMinutes}" th:errorclass="is-invalid" min="0">
+                        <span class="hint">0 = se puede reservar hasta la hora de inicio.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('bookingCutoffMinutes')}" th:errors="*{bookingCutoffMinutes}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="cancellationDeadlineHours">Plazo para cancelar con devolución (horas antes)</label>
+                        <input class="input" type="number" th:field="*{cancellationDeadlineHours}" th:errorclass="is-invalid" min="0">
+                        <span class="field-error" th:if="${#fields.hasErrors('cancellationDeadlineHours')}" th:errors="*{cancellationDeadlineHours}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="cancellationFeePercentage">Cargo por cancelar dentro del plazo (%)</label>
+                        <input class="input" type="number" th:field="*{cancellationFeePercentage}" th:errorclass="is-invalid" min="0" max="100">
+                        <span class="field-error" th:if="${#fields.hasErrors('cancellationFeePercentage')}" th:errors="*{cancellationFeePercentage}"></span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="form-actions">
+                <a class="btn btn--ghost"
+                   th:href="${activity == null} ? @{/provider} : @{/provider/activities/{id}(id=${activity.id})}">Cancelar</a>
+                <button type="submit" class="btn btn--primary btn--lg"
+                        th:text="${activity == null} ? 'Publicar actividad' : 'Guardar cambios'">Publicar actividad</button>
+            </div>
+        </form>
+
+        <aside class="register-aside">
+            <div class="card">
+                <h3>Política de cancelación</h3>
+                <p class="muted small">Si el turista cancela <strong>dentro del plazo</strong>, se le devuelve el monto
+                    menos el cargo que indiques. Si cancela <strong>fuera del plazo</strong>, no hay devolución.</p>
+                <p class="muted small">Ejemplo: plazo de 24 horas y cargo del 10 %. Una reserva de $ 2.000 cancelada
+                    dos días antes recibe $ 1.800; cancelada 3 horas antes, no recibe devolución.</p>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

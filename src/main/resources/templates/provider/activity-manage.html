@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-04: datos de la actividad y gestion de sus slots (fechas, horarios, precio y capacidad) -->
+<head th:replace="~{fragments/layout :: head(${activity.name})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page" th:with="editable=${activity.business.approved}">
+    <div class="breadcrumb">
+        <a th:href="@{/provider}">Mi espacio</a> / <span th:text="${activity.name}">Actividad</span>
+    </div>
+    <div class="page-header page-header--actions">
+        <div>
+            <span class="eyebrow" th:text="${activity.business.legalName}">Emprendimiento</span>
+            <h1 th:text="${activity.name}">Actividad</h1>
+            <p th:text="|${activity.location.name}, ${activity.location.department.label} · ${activity.durationLabel}|">Localidad · 2 h</p>
+        </div>
+        <div class="provider-business__actions">
+            <a class="btn btn--ghost" th:if="${editable}" th:href="@{/activities/{id}(id=${activity.id})}" target="_blank">
+                Ver en el portal <svg th:replace="~{fragments/icons :: icon-sized('external', 'icon--sm')}"></svg>
+            </a>
+            <a class="btn btn--dark" th:if="${editable}" th:href="@{/provider/activities/{id}/edit(id=${activity.id})}">Editar actividad</a>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+    <div class="alert alert--warning" role="status" th:unless="${editable}">
+        <div>El emprendimiento está <strong th:text="${#strings.toLowerCase(activity.business.status.label)}">suspendido</strong>:
+            la actividad no se muestra en el portal y no se pueden modificar ni ella ni sus horarios.</div>
+    </div>
+
+    <div class="admin-detail-layout">
+        <div>
+            <!-- Proximos slots -->
+            <section class="card card--flush">
+                <div class="card__header">
+                    <h3>Próximos horarios</h3>
+                    <span class="count-pill" th:text="${upcomingSlots.size()}">0</span>
+                </div>
+                <div class="empty-state" th:if="${upcomingSlots.isEmpty()}">
+                    <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
+                    <h3>Sin fechas cargadas</h3>
+                    <p>La actividad ya está publicada, pero no se puede reservar hasta que agregues al menos un horario.</p>
+                </div>
+                <div class="table-wrap" th:unless="${upcomingSlots.isEmpty()}">
+                    <table class="table">
+                        <thead>
+                        <tr><th>Fecha y hora</th><th>Precio por persona</th><th>Lugares</th><th>Estado</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="slot : ${upcomingSlots}">
+                            <td>
+                                <span class="cell-title" th:text="${#temporals.format(slot.startTime, 'EEE dd/MM/yyyy')}">sáb 01/11/2026</span>
+                                <span class="cell-sub" th:text="${#temporals.format(slot.startTime, 'HH:mm')} + ' h'">10:00 h</span>
+                            </td>
+                            <td th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</td>
+                            <td>
+                                <span th:text="|${slot.availability} libres de ${slot.maxCapacity}|">12 libres de 12</span>
+                                <span class="cell-sub" th:if="${slot.reservedSeats > 0}" th:text="|${slot.reservedSeats} reservados|">0 reservados</span>
+                            </td>
+                            <td>
+                                <span class="badge badge--denied" th:if="${!slot.active}">Cancelado</span>
+                                <span class="badge badge--pending" th:if="${slot.active and slot.soldOut}">Completo</span>
+                                <span class="badge badge--approved" th:if="${slot.active and !slot.soldOut}">Activo</span>
+                            </td>
+                            <td class="cell-actions">
+                                <th:block th:if="${editable and slot.active}">
+                                    <a class="btn btn--ghost btn--sm"
+                                       th:href="@{/provider/activities/{id}/slots/{slotId}/edit(id=${activity.id}, slotId=${slot.id})}">Modificar</a>
+                                    <!-- 5b: se confirma antes de cancelar (con reservas, el mensaje dice cuantas se cancelan) -->
+                                    <form class="inline-form" method="post"
+                                          th:action="@{/provider/activities/{id}/slots/{slotId}/cancel(id=${activity.id}, slotId=${slot.id})}"
+                                          th:attr="data-confirm=${slot.reservedSeats > 0}
+                                              ? |Este horario tiene ${slot.reservedSeats} lugares reservados. Al cancelarlo se cancelan sus reservas con devolución total y se avisa a los turistas. ¿Cancelar el horario?|
+                                              : '¿Cancelar este horario? Dejará de mostrarse en el portal.'">
+                                        <button type="submit" class="btn btn--ghost btn--sm btn--danger-text">Cancelar</button>
+                                    </form>
+                                </th:block>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Slots pasados, del mas reciente al mas antiguo -->
+            <section class="card card--flush" th:unless="${pastSlots.isEmpty()}">
+                <div class="card__header"><h3>Horarios pasados</h3></div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>Fecha y hora</th><th>Precio por persona</th><th>Reservados</th><th>Estado</th></tr></thead>
+                        <tbody>
+                        <tr th:each="slot : ${pastSlots}">
+                            <td th:text="${#temporals.format(slot.startTime, 'dd/MM/yyyy HH:mm')}">01/11/2026 10:00</td>
+                            <td th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</td>
+                            <td th:text="|${slot.reservedSeats} de ${slot.maxCapacity}|">0 de 12</td>
+                            <td>
+                                <span class="badge badge--denied" th:if="${!slot.active}">Cancelado</span>
+                                <span class="badge badge--suspended" th:if="${slot.active}">Realizado</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Resumen de la actividad -->
+            <section class="card">
+                <div class="card__header"><h3>Datos de la actividad</h3></div>
+                <dl class="data-list">
+                    <div class="span-2"><dt>Descripción</dt><dd th:text="${activity.description}">Texto</dd></div>
+                    <div><dt>Dirección o punto de encuentro</dt><dd th:text="${activity.address}">Dirección</dd></div>
+                    <div><dt>Idioma</dt><dd th:text="${activity.language}">Español</dd></div>
+                    <div><dt>Edad mínima</dt><dd th:text="${activity.minimumAge != null} ? |${activity.minimumAge} años| : 'Sin requisito'">Sin requisito</dd></div>
+                    <div><dt>Categorías</dt><dd th:text="${#strings.listJoin(activity.categories.![name], ', ')}">Categorías</dd></div>
+                    <div><dt>Reservas hasta</dt>
+                        <dd th:text="${activity.bookingCutoffMinutes == 0} ? 'La hora de inicio' : |${activity.bookingCutoffMinutes} minutos antes del inicio|">60 minutos antes</dd></div>
+                    <div><dt>Cancelación con devolución</dt>
+                        <dd th:text="|Hasta ${activity.cancellationDeadlineHours} h antes, con un cargo del ${activity.cancellationFeePercentage} %|">Hasta 24 h antes</dd></div>
+                    <div th:if="${activity.inclusions}"><dt>Qué incluye</dt><dd th:text="${activity.inclusions}">Incluye</dd></div>
+                    <div th:if="${activity.equipment}"><dt>Equipamiento necesario</dt><dd th:text="${activity.equipment}">Equipo</dd></div>
+                    <div th:if="${activity.accessibility}"><dt>Accesibilidad</dt><dd th:text="${activity.accessibility}">Accesibilidad</dd></div>
+                    <div th:if="${activity.importantDetails}"><dt>Detalles importantes</dt><dd th:text="${activity.importantDetails}">Detalles</dd></div>
+                </dl>
+            </section>
+        </div>
+
+        <!-- Agregar un slot (CU-04 pasos 2 a 5) -->
+        <aside class="card action-panel" th:if="${editable}">
+            <div class="card__header"><h3>Agregar horario</h3></div>
+            <form th:action="@{/provider/activities/{id}/slots(id=${activity.id})}" th:object="${slotForm}" method="post" novalidate>
+                <th:block th:replace="~{provider/slot-fields :: fields}"></th:block>
+                <button type="submit" class="btn btn--primary btn--block">Agregar horario</button>
+            </form>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

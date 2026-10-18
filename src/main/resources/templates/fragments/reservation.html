@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+<!-- Etiqueta de color segun el estado de la reserva (RF-20). Uso: th:replace="~{fragments/reservation :: status(${reservation.status})}" -->
+<span th:fragment="status(status)" class="badge"
+      th:classappend="${status.name() == 'PENDING_PAYMENT'} ? 'badge--pending'
+                    : (${status.name() == 'CONFIRMED'} ? 'badge--approved'
+                    : (${status.name() == 'CANCELLED'} ? 'badge--denied' : 'badge--suspended'))"
+      th:text="${status.label}">Pendiente de pago</span>
+</body>
+</html>

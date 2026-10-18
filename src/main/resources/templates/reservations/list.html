@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-13 pasos 1 a 3: mis reservas, separando proximas y pasadas -->
+<head th:replace="~{fragments/layout :: head('Mis reservas')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="page-header">
+        <span class="eyebrow">Tu cuenta</span>
+        <h1>Mis reservas</h1>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+    <!-- 2a: todavia no reservo nada -->
+    <div class="card" th:if="${upcoming.isEmpty() and past.isEmpty()}">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
+            <h3>Todavía no tenés reservas</h3>
+            <p>Explorá las experiencias de todo el país y reservá la próxima.</p>
+            <a class="btn btn--primary" th:href="@{/activities}">Explorar experiencias</a>
+        </div>
+    </div>
+
+    <section th:replace="~{:: group('Próximas', ${upcoming})}"></section>
+    <section th:replace="~{:: group('Pasadas', ${past})}"></section>
+
+    <!-- Tabla de un grupo de reservas; se usa dos veces arriba -->
+    <th:block th:if="false">
+        <section th:fragment="group(title, reservations)" class="card card--flush reservation-group" th:unless="${reservations.isEmpty()}">
+            <div class="card__header"><h3 th:text="${title}">Próximas</h3></div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                    <tr><th>Código</th><th>Actividad</th><th>Fecha y hora</th><th>Personas</th><th>Monto</th><th>Estado</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="reservation : ${reservations}">
+                        <td class="cell-title" th:text="${reservation.code}">R-000001</td>
+                        <td>
+                            <span class="cell-title" th:text="${reservation.slot.activity.name}">Actividad</span>
+                            <span class="cell-sub" th:text="${reservation.slot.activity.business.legalName}">Emprendimiento</span>
+                        </td>
+                        <td th:text="${#temporals.format(reservation.slot.startTime, 'dd/MM/yyyy HH:mm')}">01/11/2026 10:00</td>
+                        <td th:text="${reservation.participantCount}">2</td>
+                        <td th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</td>
+                        <td>
+                            <span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span>
+                            <span class="cell-sub" th:if="${reservation.pendingPayment}"
+                                  th:text="|Pagá antes de las ${#temporals.format(reservation.paymentDeadline, 'HH:mm')}|">Pagá antes de</span>
+                        </td>
+                        <td class="cell-actions">
+                            <a class="btn btn--ghost btn--sm" th:href="@{/reservations/{id}(id=${reservation.id})}">Ver detalle</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </th:block>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

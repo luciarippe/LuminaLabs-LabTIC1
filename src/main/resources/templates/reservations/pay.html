@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-01 pasos 7 y 8, CU-16 pasos 2 y 3: datos de la tarjeta -->
+<head th:replace="~{fragments/layout :: head('Pagar reserva')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page" th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}">
+    <div class="breadcrumb">
+        <a th:href="@{/reservations}">Mis reservas</a> /
+        <a th:href="@{/reservations/{id}(id=${reservation.id})}" th:text="${reservation.code}">R-000001</a> /
+        <span>Pagar</span>
+    </div>
+    <div class="page-header">
+        <span class="eyebrow" th:text="|Reserva ${reservation.code}|">Reserva</span>
+        <h1>Pagar la reserva</h1>
+        <p th:text="|${activity.name} · ${#temporals.format(slot.startTime, 'dd/MM/yyyy HH:mm')}|">Actividad</p>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+    <div class="register-layout">
+        <form class="form-section" th:action="@{/reservations/{id}/pay(id=${reservation.id})}" th:object="${cardForm}"
+              method="post" novalidate>
+            <div class="form-section__title"><h2>Datos de la tarjeta</h2></div>
+            <p class="form-section__intro">El pago lo procesa la pasarela de pagos. Nosotros no guardamos el número de tu tarjeta.</p>
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label for="cardHolder">Nombre del titular</label>
+                    <input class="input" type="text" th:field="*{cardHolder}" th:errorclass="is-invalid" autocomplete="cc-name">
+                    <span class="field-error" th:if="${#fields.hasErrors('cardHolder')}" th:errors="*{cardHolder}"></span>
+                </div>
+                <div class="field span-2">
+                    <label for="cardNumber">Número de tarjeta</label>
+                    <input class="input" type="text" th:field="*{cardNumber}" th:errorclass="is-invalid"
+                           inputmode="numeric" autocomplete="cc-number" placeholder="4111 1111 1111 1111">
+                    <span class="field-error" th:if="${#fields.hasErrors('cardNumber')}" th:errors="*{cardNumber}"></span>
+                </div>
+                <div class="field">
+                    <label for="expiry">Vencimiento</label>
+                    <input class="input" type="text" th:field="*{expiry}" th:errorclass="is-invalid"
+                           autocomplete="cc-exp" placeholder="MM/AA" maxlength="5">
+                    <span class="field-error" th:if="${#fields.hasErrors('expiry')}" th:errors="*{expiry}"></span>
+                    <!-- @AssertTrue de CardForm.isNotExpired(): Spring lo registra en el campo "notExpired" -->
+                    <span class="field-error" th:if="${#fields.hasErrors('notExpired')}" th:errors="*{notExpired}"></span>
+                </div>
+                <div class="field">
+                    <label for="cvv">Código de seguridad</label>
+                    <input class="input" type="password" th:field="*{cvv}" th:errorclass="is-invalid"
+                           inputmode="numeric" autocomplete="cc-csc" maxlength="4">
+                    <span class="field-error" th:if="${#fields.hasErrors('cvv')}" th:errors="*{cvv}"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <a class="btn btn--ghost" th:href="@{/reservations/{id}(id=${reservation.id})}">Volver</a>
+                <button type="submit" class="btn btn--primary btn--lg"
+                        th:text="|Pagar $ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">Pagar</button>
+            </div>
+        </form>
+
+        <aside class="register-aside">
+            <div class="card">
+                <h3>Resumen</h3>
+                <dl class="summary-list">
+                    <div><dt>Precio por persona</dt><dd th:text="|$ ${#numbers.formatDecimal(reservation.unitPrice, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</dd></div>
+                    <div><dt>Personas</dt><dd th:text="${reservation.participantCount}">2</dd></div>
+                    <div class="summary-list__total"><dt>Total</dt><dd th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</dd></div>
+                </dl>
+                <p class="muted small" th:text="|Tenés hasta las ${#temporals.format(reservation.paymentDeadline, 'HH:mm')} para pagar.|">Plazo</p>
+            </div>
+
+            <!-- Solo para probar: la pasarela simulada responde segun la tarjeta (ver MockPaymentGatewayController) -->
+            <div class="card test-cards">
+                <h3>Tarjetas de prueba</h3>
+                <p class="muted small">Pasarela simulada. Usá cualquier titular, un vencimiento futuro y cualquier código.</p>
+                <dl>
+                    <div><dt>4111 1111 1111 1111</dt><dd>Aprobado</dd></div>
+                    <div><dt>4000 0000 0000 0002</dt><dd>Rechazado</dd></div>
+                    <div><dt>4000 0000 0000 0119</dt><dd>Falla de la pasarela</dd></div>
+                    <div><dt>4000 0000 0000 3220</dt><dd>Sin respuesta (pero se cobra)</dd></div>
+                    <div><dt>4000 0000 0000 3246</dt><dd>Sin respuesta (y se rechaza)</dd></div>
+                    <div><dt>4000 0000 0000 0069</dt><dd>Aprobado, pero las devoluciones fallan 2 veces</dd></div>
+                </dl>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

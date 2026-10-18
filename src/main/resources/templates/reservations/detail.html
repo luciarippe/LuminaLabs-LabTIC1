@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-13 pasos 4 a 6: detalle de una reserva -->
+<head th:replace="~{fragments/layout :: head(${reservation.code})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page" th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}">
+    <div class="breadcrumb">
+        <a th:href="@{/reservations}">Mis reservas</a> / <span th:text="${reservation.code}">R-000001</span>
+    </div>
+    <div class="page-header page-header--actions">
+        <div>
+            <span class="eyebrow" th:text="|Reserva ${reservation.code}|">Reserva</span>
+            <h1 th:text="${activity.name}">Actividad</h1>
+            <p th:text="${#strings.capitalize(#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM ''de'' yyyy ''a las'' HH:mm'))}">Fecha</p>
+        </div>
+        <span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+    <!-- CU-05 4b: el prestador cambio el horario despues de reservar -->
+    <div class="alert alert--warning" role="status" th:if="${reservation.scheduleChanged and reservation.active}">
+        <div>El organizador cambió el horario de esta actividad (es el que ves arriba). Si no te sirve, podés cancelar
+            la reserva con devolución total.</div>
+    </div>
+
+    <div class="admin-detail-layout">
+        <div>
+            <section class="card">
+                <div class="card__header"><h3>La actividad</h3></div>
+                <dl class="data-list">
+                    <div><dt>Organiza</dt><dd th:text="${activity.business.legalName}">Emprendimiento</dd></div>
+                    <div><dt>Duración</dt><dd th:text="${activity.durationLabel}">2 h</dd></div>
+                    <div class="span-2"><dt>Dirección o punto de encuentro</dt>
+                        <dd th:text="|${activity.address} — ${activity.location.name}, ${activity.location.department.label}|">Dirección</dd></div>
+                    <div th:if="${activity.equipment}" class="span-2"><dt>Qué tenés que llevar</dt><dd th:text="${activity.equipment}">Equipo</dd></div>
+                    <div th:if="${activity.inclusions}" class="span-2"><dt>Qué incluye</dt><dd th:text="${activity.inclusions}">Incluye</dd></div>
+                    <div th:if="${activity.importantDetails}" class="span-2"><dt>Detalles importantes</dt><dd th:text="${activity.importantDetails}">Detalles</dd></div>
+                </dl>
+                <a class="link-arrow" th:href="@{/activities/{id}(id=${activity.id})}">Ver la actividad</a>
+            </section>
+
+            <section class="card card--flush">
+                <div class="card__header"><h3>Participantes</h3></div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>Nombre</th><th>Fecha de nacimiento</th></tr></thead>
+                        <tbody>
+                        <tr th:each="participant : ${reservation.participants}">
+                            <td class="cell-title" th:text="|${participant.firstName} ${participant.lastName}|">Nombre</td>
+                            <td th:text="${#temporals.format(participant.birthDate, 'dd/MM/yyyy')}">01/01/1990</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <aside class="card action-panel">
+            <div class="card__header"><h3>Pago</h3></div>
+            <dl class="summary-list">
+                <div><dt>Precio por persona</dt><dd th:text="|$ ${#numbers.formatDecimal(reservation.unitPrice, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</dd></div>
+                <div><dt>Personas</dt><dd th:text="${reservation.participantCount}">2</dd></div>
+                <div class="summary-list__total"><dt>Total</dt><dd th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</dd></div>
+            </dl>
+
+            <!-- 6a: pendiente de pago, con el tiempo que queda -->
+            <th:block th:if="${reservation.pendingPayment}">
+                <!-- RF-18: con un intento sin respuesta no se ofrece pagar de nuevo, sino verificar ese pago -->
+                <form th:if="${awaitingPayment}" th:action="@{/reservations/{id}/payments/check(id=${reservation.id})}" method="post">
+                    <div class="alert alert--warning" role="status">
+                        <div>Tenemos un pago tuyo sin confirmar. Antes de intentar otro, verificamos con la pasarela qué pasó.</div>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--block">Verificar el pago</button>
+                </form>
+                <th:block th:unless="${awaitingPayment}">
+                    <th:block th:if="${reservation.isPaymentWindowOpen(now)}">
+                        <div class="alert alert--warning" role="status">
+                            <div th:text="|Tenés hasta las ${#temporals.format(reservation.paymentDeadline, 'HH:mm')} para pagar. Si no, la reserva vence y se liberan los lugares.|">Plazo</div>
+                        </div>
+                        <a class="btn btn--primary btn--block" th:href="@{/reservations/{id}/pay(id=${reservation.id})}"
+                           th:text="|Pagar $ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">Pagar</a>
+                    </th:block>
+                    <div class="alert alert--error" role="status" th:unless="${reservation.isPaymentWindowOpen(now)}">
+                        <div>Se venció el plazo para pagar esta reserva.</div>
+                    </div>
+                </th:block>
+            </th:block>
+
+            <!-- RF-18: cada intento de pago con su fecha, monto y estado -->
+            <div class="payment-attempts" th:unless="${payments.isEmpty()}">
+                <h4>Intentos de pago</h4>
+                <ul>
+                    <li th:each="payment : ${payments}">
+                        <span>
+                            <span th:text="|${payment.type.label} · tarjeta terminada en ${payment.cardLastDigits}|">Cobro · tarjeta 1111</span>
+                            <small th:text="${#temporals.format(payment.createdAt, 'dd/MM HH:mm:ss')}">17/10 21:00</small>
+                        </span>
+                        <span class="badge"
+                              th:classappend="${payment.status.name() == 'APPROVED'} ? 'badge--approved' : (${payment.status.name() == 'REJECTED'} ? 'badge--denied' : 'badge--pending')"
+                              th:text="${payment.status.label}">Aprobado</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 6b: cancelada, vencida o terminada: se muestra como historico -->
+            <p class="muted small" th:if="${reservation.status.name() == 'CONFIRMED'}">Tu pago fue aprobado. ¡Que lo disfrutes!</p>
+            <p class="muted small" th:if="${reservation.status.name() == 'EXPIRED'}">Venció sin pago: no se te cobró nada y los lugares se liberaron.</p>
+
+            <!-- RF-19: datos de la cancelacion y estado de la devolucion -->
+            <div class="reason-box cancellation-box" th:if="${cancellation != null}">
+                <strong th:text="${cancellation.reason.label}">Cancelada</strong>
+                <span th:text="|el ${#temporals.format(cancellation.cancelledAt, 'dd/MM/yyyy HH:mm')}.|">fecha</span>
+                <dl class="summary-list">
+                    <div><dt>Cargo</dt><dd th:text="|$ ${#numbers.formatDecimal(cancellation.feeAmount, 1, 'POINT', 0, 'COMMA')}|">$ 0</dd></div>
+                    <div><dt>Devolución</dt><dd th:text="|$ ${#numbers.formatDecimal(cancellation.refundAmount, 1, 'POINT', 0, 'COMMA')}|">$ 0</dd></div>
+                </dl>
+                <span class="muted small" th:if="${cancellation.refundPayment != null and cancellation.refundPayment.status.name() == 'PENDING'}">
+                    La devolución está en proceso: la reintentamos automáticamente hasta que la pasarela la confirme.</span>
+            </div>
+
+            <!-- CU-13 paso 6: cancelar si el slot no empezo -->
+            <a class="btn btn--ghost btn--block btn--danger-text" th:if="${canCancel and !awaitingPayment}"
+               th:href="@{/reservations/{id}/cancel(id=${reservation.id})}">Cancelar la reserva</a>
+
+            <div class="reason-box">
+                <strong>Política de cancelación:</strong>
+                <span th:text="${activity.cancellationFeePercentage == 0}
+                        ? |cancelación gratuita hasta ${activity.cancellationDeadlineHours} horas antes del inicio. Después no hay devolución.|
+                        : |hasta ${activity.cancellationDeadlineHours} horas antes del inicio se devuelve el monto menos un cargo del ${activity.cancellationFeePercentage} %. Después no hay devolución.|">Política</span>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

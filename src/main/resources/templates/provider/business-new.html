@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Nuevo emprendimiento')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page">
+    <div class="breadcrumb">
+        <a th:href="@{/provider}">Mi espacio</a> / <span>Nuevo emprendimiento</span>
+    </div>
+    <div class="page-header">
+        <span class="eyebrow">Espacio del prestador</span>
+        <h1>Registrar otro emprendimiento</h1>
+        <p>Se asocia a tu cuenta y queda pendiente hasta que un administrador lo apruebe. Mientras tanto
+            podés seguir gestionando tus otros emprendimientos.</p>
+    </div>
+
+    <div class="register-layout">
+        <form th:action="@{/provider/businesses/new}" th:object="${form}" method="post" novalidate>
+
+            <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                <div>
+                    <strong>Revisá los campos marcados.</strong>
+                    <span th:if="${#fields.errors('*').size() == 1}">Hay un dato para corregir.</span>
+                    <span th:unless="${#fields.errors('*').size() == 1}"
+                          th:text="|Hay ${#fields.errors('*').size()} datos para corregir.|"></span>
+                </div>
+            </div>
+
+            <th:block th:replace="~{provider/business-fields :: sections}"></th:block>
+
+            <div class="form-actions">
+                <a class="btn btn--ghost" th:href="@{/provider}">Cancelar</a>
+                <button type="submit" class="btn btn--primary btn--lg">Enviar solicitud</button>
+            </div>
+        </form>
+
+        <aside class="register-aside">
+            <div class="card">
+                <h3>Usás tu cuenta actual</h3>
+                <p class="muted small">No hace falta crear otra cuenta: el nuevo emprendimiento queda asociado a
+                    <strong th:text="${currentUser.username}">usuario</strong>, y vas a poder elegir cuál gestionar
+                    desde tu espacio.</p>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

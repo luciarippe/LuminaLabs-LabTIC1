@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-04 5a: modificar un slot -->
+<head th:replace="~{fragments/layout :: head('Modificar horario')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page" th:with="activity=${slot.activity}">
+    <div class="breadcrumb">
+        <a th:href="@{/provider}">Mi espacio</a> /
+        <a th:href="@{/provider/activities/{id}(id=${activity.id})}" th:text="${activity.name}">Actividad</a> /
+        <span>Modificar horario</span>
+    </div>
+    <div class="page-header">
+        <span class="eyebrow" th:text="${activity.name}">Actividad</span>
+        <h1>Modificar horario</h1>
+        <p th:text="|Horario actual: ${#temporals.format(slot.startTime, 'EEEE dd/MM/yyyy HH:mm')} h|">Horario actual</p>
+    </div>
+
+    <div class="register-layout">
+        <form class="card form-stack" th:action="@{/provider/activities/{id}/slots/{slotId}/edit(id=${activity.id}, slotId=${slot.id})}"
+              th:object="${slotForm}" method="post" novalidate>
+            <th:block th:replace="~{provider/slot-fields :: fields}"></th:block>
+            <div class="form-actions">
+                <a class="btn btn--ghost" th:href="@{/provider/activities/{id}(id=${activity.id})}">Volver</a>
+                <button type="submit" class="btn btn--primary">Guardar cambios</button>
+            </div>
+        </form>
+
+        <aside class="register-aside">
+            <div class="card">
+                <h3>Antes de cambiar</h3>
+                <p class="muted small" th:if="${slot.reservedSeats > 0}"
+                   th:text="|Este horario tiene ${slot.reservedSeats} lugares reservados: la capacidad no puede quedar por debajo de ese número.|">Reservados</p>
+                <p class="muted small">Si cambiás la fecha o la hora y hay reservas, avisamos a los turistas por correo
+                    y pueden cancelar con devolución total.</p>
+                <p class="muted small">Un cambio de precio no afecta a las reservas que ya se hicieron.</p>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

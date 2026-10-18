@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Secciones 1 a 3 del formulario de emprendimiento (CU-02). Se insertan dentro de un <form th:object>
+     cuyo objeto tiene la propiedad "business" (ProviderRegistrationForm o NewBusinessForm).
+     th:field arma los nombres "business.legalName", etc., y los id iguales (los label usan esos id). -->
+<body>
+<th:block th:fragment="sections">
+
+    <!-- 1. Tipo -->
+    <section class="form-section">
+        <div class="form-section__title">
+            <span class="step-number">1</span>
+            <h2>Tipo de emprendimiento</h2>
+        </div>
+        <p class="form-section__intro">Las empresas se identifican con RUT y los particulares con cédula.</p>
+        <div class="option-cards" role="radiogroup" aria-label="Tipo de emprendimiento">
+            <label class="option-card" th:each="type : ${businessTypes}">
+                <input type="radio" th:field="*{business.businessType}" th:value="${type}">
+                <span class="option-card__body">
+                    <span class="option-card__icon">
+                        <svg th:replace="~{fragments/icons :: icon-sized(${type.name() == 'COMPANY'} ? 'building' : 'user', '')}"></svg>
+                    </span>
+                    <span>
+                        <span class="option-card__title" th:text="${type.label}">Empresa</span>
+                        <span class="option-card__text"
+                              th:text="${type.name() == 'COMPANY'} ? 'Sociedad o empresa con RUT.' : 'Persona que ofrece una actividad por su cuenta.'">Texto</span>
+                    </span>
+                </span>
+            </label>
+        </div>
+        <span class="field-error" th:if="${#fields.hasErrors('business.businessType')}" th:errors="*{business.businessType}"></span>
+    </section>
+
+    <!-- 2. Emprendimiento -->
+    <section class="form-section">
+        <div class="form-section__title">
+            <span class="step-number">2</span>
+            <h2>Datos del emprendimiento</h2>
+        </div>
+        <p class="form-section__intro">Esta información se mostrará a los turistas junto a tus actividades.</p>
+        <div class="form-grid">
+            <div class="field">
+                <label for="business.legalName">Razón social o nombre</label>
+                <input class="input" type="text" th:field="*{business.legalName}" th:errorclass="is-invalid" maxlength="150">
+                <span class="field-error" th:if="${#fields.hasErrors('business.legalName')}" th:errors="*{business.legalName}"></span>
+            </div>
+            <div class="field">
+                <label for="business.identifier" id="identifier-label">RUT o cédula</label>
+                <input class="input" type="text" th:field="*{business.identifier}" th:errorclass="is-invalid" inputmode="numeric">
+                <span class="hint" id="identifier-hint">Solo números; podés incluir puntos o guiones.</span>
+                <span class="hint">¿Tu solicitud fue denegada? Usá el mismo RUT o cédula para volver a postularla con los datos corregidos.</span>
+                <span class="field-error" th:if="${#fields.hasErrors('business.identifier')}" th:errors="*{business.identifier}"></span>
+            </div>
+            <div class="field span-2">
+                <label for="business.description">Descripción de los servicios</label>
+                <textarea class="textarea" th:field="*{business.description}" th:errorclass="is-invalid" maxlength="2000"
+                          placeholder="Contá qué experiencias ofrecés, a quién están dirigidas y qué las hace especiales."></textarea>
+                <span class="field-error" th:if="${#fields.hasErrors('business.description')}" th:errors="*{business.description}"></span>
+            </div>
+            <div class="field span-2" th:classappend="${#fields.hasErrors('business.locationIds')} ? 'is-invalid'">
+                <span class="label">Localidades donde operás</span>
+                <div class="locality-picker" data-locality-picker>
+                    <!-- Se completa con JavaScript a partir de los checkbox marcados -->
+                    <div class="locality-picker__selected" aria-live="polite">
+                        <div class="locality-picker__selected-title">
+                            Seleccionadas <span class="count-pill" data-locality-count>0</span>
+                        </div>
+                        <div class="chip-list" data-locality-selected></div>
+                        <span class="locality-picker__empty" data-locality-empty>Todavía no elegiste ninguna localidad. Marcalas en el listado de abajo.</span>
+                    </div>
+                    <div class="locality-picker__toolbar">
+                        <label class="visually-hidden" for="location-search">Buscar localidad</label>
+                        <input class="input" type="search" id="location-search" placeholder="Buscar localidad o departamento…" data-locality-search>
+                    </div>
+                    <div class="locality-picker__list">
+                        <div th:each="entry : ${locationsByDepartment}" th:attr="data-locality-group=${entry.key.label}">
+                            <div class="locality-group__title" th:text="${entry.key.label}">Departamento</div>
+                            <div class="locality-group__items">
+                                <label class="check-chip" th:each="location : ${entry.value}">
+                                    <input type="checkbox" th:field="*{business.locationIds}" th:value="${location.id}"
+                                           th:data-name="${location.name}" th:data-department="${entry.key.label}">
+                                    <span th:text="${location.name}">Localidad</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <span class="field-error" th:if="${#fields.hasErrors('business.locationIds')}" th:errors="*{business.locationIds}"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Contacto y banco -->
+    <section class="form-section">
+        <div class="form-section__title">
+            <span class="step-number">3</span>
+            <h2>Contacto y datos bancarios</h2>
+        </div>
+        <p class="form-section__intro">Los datos bancarios se usan para transferirte los pagos de las reservas. No se muestran públicamente.</p>
+        <div class="form-grid">
+            <div class="field">
+                <label for="business.contactEmail">Correo de contacto</label>
+                <input class="input" type="email" th:field="*{business.contactEmail}" th:errorclass="is-invalid">
+                <span class="field-error" th:if="${#fields.hasErrors('business.contactEmail')}" th:errors="*{business.contactEmail}"></span>
+            </div>
+            <div class="field">
+                <label for="business.contactPhone">Teléfono de contacto</label>
+                <input class="input" type="tel" th:field="*{business.contactPhone}" th:errorclass="is-invalid" placeholder="099 123 456">
+                <span class="field-error" th:if="${#fields.hasErrors('business.contactPhone')}" th:errors="*{business.contactPhone}"></span>
+            </div>
+            <div class="field">
+                <label for="business.bankName">Banco</label>
+                <input class="input" type="text" th:field="*{business.bankName}" th:errorclass="is-invalid" placeholder="Ej.: BROU">
+                <span class="field-error" th:if="${#fields.hasErrors('business.bankName')}" th:errors="*{business.bankName}"></span>
+            </div>
+            <div class="field">
+                <label for="business.bankAccountNumber">Número de cuenta</label>
+                <input class="input" type="text" th:field="*{business.bankAccountNumber}" th:errorclass="is-invalid">
+                <span class="field-error" th:if="${#fields.hasErrors('business.bankAccountNumber')}" th:errors="*{business.bankAccountNumber}"></span>
+            </div>
+        </div>
+    </section>
+
+</th:block>
+</body>
+</html>

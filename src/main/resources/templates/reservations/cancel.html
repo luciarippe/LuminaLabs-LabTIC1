@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-05 pasos 2 y 3: politica de cancelacion, montos y confirmacion -->
+<head th:replace="~{fragments/layout :: head('Cancelar reserva')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page" th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}, policy=${quote.policyCase.name()}">
+    <div class="breadcrumb">
+        <a th:href="@{/reservations}">Mis reservas</a> /
+        <a th:href="@{/reservations/{id}(id=${reservation.id})}" th:text="${reservation.code}">R-000001</a> /
+        <span>Cancelar</span>
+    </div>
+    <div class="page-header">
+        <span class="eyebrow" th:text="|Reserva ${reservation.code}|">Reserva</span>
+        <h1>¿Cancelar la reserva?</h1>
+        <p th:text="|${activity.name} · ${#temporals.format(slot.startTime, 'dd/MM/yyyy HH:mm')} · ${reservation.participantCount} personas|">Actividad</p>
+    </div>
+
+    <div class="register-layout">
+        <form class="card form-stack" th:action="@{/reservations/{id}/cancel(id=${reservation.id})}" method="post">
+            <!-- Explicacion segun el caso de la politica (ver CancellationQuote.Case) -->
+            <div class="alert alert--info" role="status" th:if="${policy == 'NOT_PAID'}">
+                <div>Todavía no pagaste esta reserva, así que no hay nada que devolver. Los lugares se liberan para otros turistas.</div>
+            </div>
+            <div class="alert alert--success" role="status" th:if="${policy == 'SCHEDULE_CHANGED'}">
+                <div>El organizador cambió el horario de esta actividad, así que te devolvemos todo lo que pagaste, sin cargo.</div>
+            </div>
+            <div class="alert alert--info" role="status" th:if="${policy == 'WITHIN_DEADLINE'}">
+                <div th:text="|Estás dentro del plazo de cancelación (hasta ${activity.cancellationDeadlineHours} horas antes del inicio). Se cobra un cargo del ${activity.cancellationFeePercentage} % y te devolvemos el resto.|">Dentro del plazo</div>
+            </div>
+            <!-- 4a: fuera de plazo se puede cancelar igual, pero sin devolucion -->
+            <div class="alert alert--warning" role="status" th:if="${policy == 'OUTSIDE_DEADLINE'}">
+                <div th:text="|Ya pasó el plazo para cancelar con devolución (hasta ${activity.cancellationDeadlineHours} horas antes del inicio). Si cancelás ahora, no se te devuelve nada. También podés mantener la reserva.|">Fuera de plazo</div>
+            </div>
+
+            <dl class="summary-list">
+                <div><dt>Pagaste</dt><dd th:text="|$ ${#numbers.formatDecimal(quote.paid, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</dd></div>
+                <div><dt>Cargo por cancelar</dt><dd th:text="|$ ${#numbers.formatDecimal(quote.fee, 1, 'POINT', 0, 'COMMA')}|">$ 300</dd></div>
+                <div class="summary-list__total"><dt>Te devolvemos</dt><dd th:text="|$ ${#numbers.formatDecimal(quote.refund, 1, 'POINT', 0, 'COMMA')}|">$ 2.700</dd></div>
+            </dl>
+            <p class="muted small" th:if="${quote.hasRefund()}">La devolución va a la misma tarjeta con la que pagaste.</p>
+
+            <div class="form-actions">
+                <a class="btn btn--ghost" th:href="@{/reservations/{id}(id=${reservation.id})}">Mantener la reserva</a>
+                <button type="submit" class="btn btn--danger">Cancelar la reserva</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
