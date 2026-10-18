@@ -50,8 +50,11 @@ public class SecurityConfig {
                         .requestMatchers("/", "/activities", "/activities/**",
                                 "/login", "/register", "/register/**", "/error",
                                 "/css/**", "/js/**", "/images/**").permitAll()
+                        // Pasarela de pagos simulada: es "otro sistema", la llama el servidor por HTTP
+                        .requestMatchers("/mock-gateway/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/provider/**").hasRole("PROVIDER")
+                        .requestMatchers("/reservations/**").hasRole("TOURIST")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
@@ -61,7 +64,10 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
                         .permitAll())
-                .exceptionHandling(exceptions -> exceptions.accessDeniedPage("/access-denied"));
+                .exceptionHandling(exceptions -> exceptions.accessDeniedPage("/access-denied"))
+                // El token CSRF protege los formularios del navegador. La pasarela simulada es una API que
+                // llama otro programa (no un navegador con sesion), asi que no lo lleva.
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/mock-gateway/**"));
         return http.build();
     }
 

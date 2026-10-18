@@ -2,6 +2,7 @@ package uy.edu.um.luminalabs.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -16,6 +17,7 @@ import uy.edu.um.luminalabs.entities.BusinessType;
 import uy.edu.um.luminalabs.entities.Department;
 import uy.edu.um.luminalabs.entities.Location;
 import uy.edu.um.luminalabs.exceptions.FieldValidationException;
+import uy.edu.um.luminalabs.security.SecurityUser;
 import uy.edu.um.luminalabs.services.LocationService;
 import uy.edu.um.luminalabs.services.ProviderRegistrationService;
 
@@ -32,7 +34,11 @@ public class ProviderRegistrationController {
     private final LocationService locationService;
 
     @GetMapping
-    public String showForm(Model model) {
+    public String showForm(@AuthenticationPrincipal SecurityUser currentUser, Model model) {
+        // CU-02 1a: si ya es prestador, agrega el emprendimiento a su cuenta sin volver a cargar sus datos
+        if (currentUser != null && currentUser.isProvider()) {
+            return "redirect:/provider/businesses/new";
+        }
         model.addAttribute("form", new ProviderRegistrationForm());
         return "provider/register";
     }

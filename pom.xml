@@ -104,6 +104,17 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Flyway: aplica los scripts de src/main/resources/db/migration al arrancar (ver application.properties) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+		<!-- Desde Flyway 10 el soporte de cada base va en un modulo aparte -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
 	</dependencies>
 
 

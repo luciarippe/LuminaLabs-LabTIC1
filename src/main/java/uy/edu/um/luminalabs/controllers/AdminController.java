@@ -44,6 +44,8 @@ public class AdminController {
     @GetMapping("/businesses/{id}")
     public String businessDetail(@PathVariable Long id, Model model) {
         model.addAttribute("business", businessService.findDetail(id));
+        // CU-11 3a: se avisa cuantas reservas se cancelan antes de suspender
+        model.addAttribute("activeReservations", businessService.countActiveReservations(id));
         return "admin/business-detail";
     }
 

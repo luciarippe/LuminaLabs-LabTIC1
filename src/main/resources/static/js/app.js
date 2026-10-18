@@ -6,6 +6,15 @@ document.addEventListener("DOMContentLoaded", () => {
         select.addEventListener("change", () => select.form.submit());
     });
 
+    // Formularios que piden confirmacion antes de enviarse (ej. cancelar un horario)
+    document.querySelectorAll("form[data-confirm]").forEach(form => {
+        form.addEventListener("submit", event => {
+            if (!window.confirm(form.dataset.confirm)) {
+                event.preventDefault();
+            }
+        });
+    });
+
     // Mostrar / ocultar contrasena
     document.querySelectorAll("[data-toggle-password]").forEach(button => {
         const input = document.getElementById(button.dataset.togglePassword);
@@ -19,13 +28,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Texto de ayuda del identificador segun el tipo de emprendimiento (RUT o cedula)
     const identifierLabel = document.getElementById("identifier-label");
     const identifierHint = document.getElementById("identifier-hint");
-    const typeInputs = document.querySelectorAll("input[name='businessType']");
+    const typeInputs = document.querySelectorAll("input[name$='businessType']");
     const identifierTexts = {
         COMPANY: ["RUT", "12 dígitos, con o sin espacios."],
         INDIVIDUAL: ["Cédula de identidad", "7 u 8 dígitos, con o sin puntos y guion."]
     };
     const updateIdentifier = () => {
-        const checked = document.querySelector("input[name='businessType']:checked");
+        const checked = document.querySelector("input[name$='businessType']:checked");
         if (!checked || !identifierLabel) return;
         [identifierLabel.textContent, identifierHint.textContent] = identifierTexts[checked.value];
     };

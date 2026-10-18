@@ -5,41 +5,65 @@
 <header th:replace="~{fragments/layout :: header(true)}"></header>
 
 <main class="container page">
-    <div class="page-header">
-        <span class="eyebrow">Espacio del prestador</span>
-        <h1 th:text="|¡Hola, ${currentUser.displayName}!|">¡Hola!</h1>
-        <p>Desde acá vas a gestionar tus emprendimientos, actividades y reservas.</p>
+    <div class="page-header page-header--actions">
+        <div>
+            <span class="eyebrow">Espacio del prestador</span>
+            <h1 th:text="|¡Hola, ${currentUser.displayName}!|">¡Hola!</h1>
+            <p>Desde acá gestionás tus emprendimientos, sus actividades y sus fechas.</p>
+        </div>
+        <a class="btn btn--ghost" th:href="@{/provider/businesses/new}">Registrar otro emprendimiento</a>
     </div>
 
-    <h2>Mis emprendimientos</h2>
-    <div class="business-grid">
-        <article class="card business-card" th:each="business : ${businesses}">
-            <div class="business-card__top">
-                <div>
-                    <h3 th:text="${business.legalName}">Emprendimiento</h3>
-                    <span class="business-card__meta"
-                          th:text="|${business.type.label} · ${business.type.identifierLabel} ${business.identifier}|">Empresa · RUT</span>
-                </div>
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+    <!-- Un bloque por emprendimiento, con sus actividades (CU-03) -->
+    <section class="card provider-business" th:each="business : ${businesses}"
+             th:with="activities=${activitiesByBusiness.get(business.id)}">
+        <div class="business-card__top">
+            <div>
+                <h2 th:text="${business.legalName}">Emprendimiento</h2>
+                <span class="business-card__meta"
+                      th:text="|${business.type.label} · ${business.type.identifierLabel} ${business.identifier}|">Empresa · RUT</span>
+            </div>
+            <div class="provider-business__actions">
                 <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
                       th:text="${business.status.label}">Aprobado</span>
+                <a class="btn btn--primary btn--sm" th:if="${business.approved}"
+                   th:href="@{/provider/activities/new(businessId=${business.id})}">Nueva actividad</a>
             </div>
-            <p class="muted small" th:text="${business.description}">Descripción</p>
-            <div class="chip-list">
-                <span class="chip" th:each="location : ${business.locations}" th:text="${location.name}">Localidad</span>
-            </div>
-            <div class="reason-box" th:if="${business.statusReason}">
-                <strong>Motivo:</strong> <span th:text="${business.statusReason}"></span>
-            </div>
-        </article>
-    </div>
-
-    <div class="card" style="margin-top: 28px">
-        <div class="empty-state">
-            <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
-            <h3>Actividades y reservas</h3>
-            <p>Próximamente vas a poder publicar actividades, cargar fechas y ver tus reservas desde acá.</p>
         </div>
-    </div>
+
+        <div class="reason-box" th:if="${business.statusReason}">
+            <strong>Motivo:</strong> <span th:text="${business.statusReason}"></span>
+        </div>
+        <p class="muted small" th:if="${business.status.name() == 'PENDING'}">
+            Tu solicitud está en revisión. Cuando sea aprobada vas a poder publicar actividades.</p>
+        <p class="muted small" th:if="${business.status.name() == 'SUSPENDED'}">
+            Mientras esté suspendido, sus actividades no se muestran en el portal y no se pueden modificar.</p>
+        <p class="muted small" th:if="${business.status.name() == 'DENIED'}">
+            Podés <a th:href="@{/provider/businesses/new}">volver a postularlo</a> con los datos corregidos usando el mismo identificador.</p>
+
+        <div class="table-wrap" th:if="${activities != null}">
+            <table class="table">
+                <thead><tr><th>Actividad</th><th>Localidad</th><th>Duración</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="activity : ${activities}">
+                    <td>
+                        <span class="cell-title" th:text="${activity.name}">Nombre</span>
+                        <span class="cell-sub" th:text="${#strings.listJoin(activity.categories.![name], ' · ')}">Categorías</span>
+                    </td>
+                    <td th:text="|${activity.location.name}, ${activity.location.department.label}|">Localidad</td>
+                    <td th:text="${activity.durationLabel}">2 h</td>
+                    <td class="cell-actions">
+                        <a class="btn btn--ghost btn--sm" th:href="@{/provider/activities/{id}(id=${activity.id})}">Fechas y detalle</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="muted small" th:if="${activities == null and business.approved}">
+            Todavía no publicaste actividades en este emprendimiento.</p>
+    </section>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

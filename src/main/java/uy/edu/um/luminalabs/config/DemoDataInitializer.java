@@ -15,6 +15,7 @@ import uy.edu.um.luminalabs.repositories.*;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
@@ -22,8 +23,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// DATOS DE DEMOSTRACION, solo para desarrollo: emprendimientos y actividades ficticias para ver el catalogo
-// mientras no exista la publicacion de actividades (CU-03). Se cargan una sola vez, si no hay actividades.
+// DATOS DE DEMOSTRACION, solo para desarrollo: emprendimientos y actividades ficticias para tener un catalogo
+// con contenido sin cargarlo a mano desde el espacio del prestador. Se cargan una sola vez, si no hay actividades.
 // Desactivar con app.demo-data.enabled=false en application.properties.
 @Slf4j
 @Component
@@ -152,7 +153,7 @@ public class DemoDataInitializer implements ApplicationRunner {
         business.setBankAccountNumber("000000000");
         Arrays.stream(locationNames).map(locations::get).forEach(business.getLocations()::add);
         business.addProvider(provider);
-        business.approve();
+        business.approve(LocalDateTime.now(clock));
         return businessRepository.save(business);
     }
 

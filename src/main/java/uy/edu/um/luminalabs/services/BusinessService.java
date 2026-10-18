@@ -6,13 +6,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uy.edu.um.luminalabs.entities.Business;
 import uy.edu.um.luminalabs.entities.BusinessStatus;
+import uy.edu.um.luminalabs.entities.CancellationReason;
+import uy.edu.um.luminalabs.entities.Reservation;
+import uy.edu.um.luminalabs.entities.ReservationStatus;
 import uy.edu.um.luminalabs.events.BusinessStatusChangedEvent;
 import uy.edu.um.luminalabs.events.BusinessStatusChangedEvent.Change;
 import uy.edu.um.luminalabs.exceptions.BusinessNotFoundException;
 import uy.edu.um.luminalabs.repositories.BusinessRepository;
+import uy.edu.um.luminalabs.repositories.ReservationRepository;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 // Consultas de emprendimientos y cambios de estado hechos por el administrador (CU-06, CU-11)
 @Service
@@ -20,8 +26,20 @@ import java.util.function.Consumer;
 @Transactional(readOnly = true)
 public class BusinessService {
 
+    // Reservas que todavia ocupan lugares
+    private static final List<ReservationStatus> ACTIVE =
+            List.of(ReservationStatus.PENDING_PAYMENT, ReservationStatus.CONFIRMED);
+
     private final BusinessRepository businessRepository;
+    private final ReservationRepository reservationRepository;
+    private final CancellationService cancellationService;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
+
+    // CU-11 pasos 3 y 3a: cuantas reservas vigentes se van a cancelar si se suspende
+    public int countActiveReservations(Long businessId) {
+        return activeReservations(businessId).size();
+    }
 
     public BusinessStatusCounts countByStatus() {
         return new BusinessStatusCounts(
@@ -53,13 +71,16 @@ public class BusinessService {
 
     @Transactional
     public Business deny(Long id, String reason) {
-        return changeStatus(id, business -> business.deny(reason), Change.DENIED);
+        return changeStatus(id, (business, now) -> business.deny(reason, now), Change.DENIED);
     }
 
-    // RF-06: cuando existan reservas, aca tambien hay que cancelarlas con devolucion total
+    // RF-06 y CU-11 paso 8: sus reservas vigentes se cancelan con devolucion total y se avisa a los turistas.
+    // Las actividades dejan de mostrarse solas: el catalogo solo muestra emprendimientos aprobados.
     @Transactional
     public Business suspend(Long id, String reason) {
-        return changeStatus(id, business -> business.suspend(reason), Change.SUSPENDED);
+        Business business = changeStatus(id, (found, now) -> found.suspend(reason, now), Change.SUSPENDED);
+        cancellationService.cancelWithFullRefund(activeReservations(id), CancellationReason.BUSINESS_SUSPENDED);
+        return business;
     }
 
     @Transactional
@@ -67,10 +88,16 @@ public class BusinessService {
         return changeStatus(id, Business::reactivate, Change.REACTIVATED);
     }
 
+    // Reservas pendientes o confirmadas de slots que todavia no empezaron
+    private List<Reservation> activeReservations(Long businessId) {
+        return reservationRepository.findBySlot_Activity_Business_IdAndStatusInAndSlot_StartTimeAfter(
+                businessId, ACTIVE, LocalDateTime.now(clock));
+    }
+
     // Aplica la transicion y avisa a los prestadores por correo (RF-26)
-    private Business changeStatus(Long id, Consumer<Business> transition, Change change) {
+    private Business changeStatus(Long id, BiConsumer<Business, LocalDateTime> transition, Change change) {
         Business business = businessRepository.findById(id).orElseThrow(() -> new BusinessNotFoundException(id));
-        transition.accept(business);
+        transition.accept(business, LocalDateTime.now(clock));
         eventPublisher.publishEvent(BusinessStatusChangedEvent.of(business, change));
         return business;
     }

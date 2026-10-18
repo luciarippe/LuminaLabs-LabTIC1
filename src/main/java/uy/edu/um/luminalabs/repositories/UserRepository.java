@@ -15,6 +15,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmailIgnoreCase(String email);
 
+    Optional<User> findByEmailIgnoreCase(String email);
+
     @Query("select count(a) from Admin a")
     long countAdmins();
 }

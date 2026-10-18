@@ -87,6 +87,11 @@
                 <form th:if="${business.status.name() == 'APPROVED'}"
                       th:action="@{/admin/businesses/{id}/suspend(id=${business.id})}" method="post">
                     <p class="muted small" style="margin: 0">Sus actividades dejarán de mostrarse y sus prestadores no podrán publicar.</p>
+                    <div class="alert alert--warning" role="status" th:if="${activeReservations > 0}">
+                        <div th:text="${activeReservations == 1}
+                                ? 'Tiene 1 reserva vigente: se cancelará con devolución total y se avisará al turista.'
+                                : |Tiene ${activeReservations} reservas vigentes: se cancelarán con devolución total y se avisará a los turistas.|">Reservas</div>
+                    </div>
                     <div class="field">
                         <label for="suspend-reason">Motivo de la suspensión</label>
                         <textarea class="textarea" id="suspend-reason" name="reason" required maxlength="1000"></textarea>

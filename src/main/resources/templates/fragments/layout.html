@@ -42,6 +42,7 @@
             <th:block th:if="${currentUser != null}">
                 <a th:if="${currentUser.admin}" th:href="@{/admin}">Administración</a>
                 <a th:if="${currentUser.provider}" th:href="@{/provider}">Mi espacio</a>
+                <a th:if="${currentUser.tourist}" th:href="@{/reservations}">Mis reservas</a>
                 <span class="user-chip">
                     <span class="avatar" th:text="${#strings.substring(currentUser.displayName, 0, 1)}">A</span>
                     <span th:text="${currentUser.displayName}">Nombre</span>
@@ -57,6 +58,7 @@
 <th:block th:fragment="flash">
     <div class="alert alert--success" role="status" th:if="${successMessage}" th:text="${successMessage}"></div>
     <div class="alert alert--error" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+    <div class="alert alert--warning" role="status" th:if="${warningMessage}" th:text="${warningMessage}"></div>
 </th:block>
 
 <footer th:fragment="footer" class="site-footer">

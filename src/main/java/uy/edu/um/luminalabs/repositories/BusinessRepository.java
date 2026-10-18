@@ -10,7 +10,8 @@ import java.util.Optional;
 
 public interface BusinessRepository extends JpaRepository<Business, Long> {
 
-    boolean existsByIdentifier(String identifier);
+    @EntityGraph(attributePaths = "providers")
+    Optional<Business> findByIdentifier(String identifier);
 
     long countByStatus(BusinessStatus status);
 

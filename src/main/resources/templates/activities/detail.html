@@ -12,6 +12,9 @@
         <span th:text="${activity.name}">Actividad</span>
     </nav>
 
+    <!-- CU-01 4a y 5a: si no se pudo reservar un horario, se vuelve aca con el motivo -->
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
     <h1 class="detail-title" th:text="${activity.name}">Nombre de la actividad</h1>
     <div class="detail-meta">
         <span>
@@ -110,30 +113,42 @@
                 por persona
             </div>
 
-            <h3 style="font-size: 1rem">Próximas fechas</h3>
-            <ul class="slot-list" th:unless="${slots.isEmpty()}">
-                <li th:each="slot : ${slots}" th:classappend="${slot.isBookableAt(now)} ? '' : 'is-unavailable'">
-                    <span>
-                        <span class="slot-list__date" th:text="${#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM')}">sábado 12 de octubre</span>
-                        <span class="slot-list__sub"
-                              th:text="${#temporals.format(slot.startTime, 'HH:mm') + ' · '
-                                        + (slot.soldOut ? 'Agotado' : (slot.availability == 1 ? '1 lugar' : slot.availability + ' lugares'))}">17:30 · 12 lugares</span>
-                    </span>
-                    <span class="slot-list__price" th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.900</span>
-                </li>
-            </ul>
-            <!-- CU-07 7a -->
-            <p class="muted" th:if="${slots.isEmpty()}">No hay fechas disponibles por el momento.</p>
+            <!-- CU-01 paso 2: elegir horario y cantidad de personas. Es un GET a /reservations/new; si el visitante
+                 no inicio sesion, Spring Security lo manda al login y despues lo devuelve ahi (CU-07 7b). -->
+            <form th:action="@{/reservations/new}" method="get" th:unless="${slots.isEmpty()}">
+                <h3 style="font-size: 1rem">Elegí una fecha</h3>
+                <ul class="slot-list">
+                    <li th:each="slot, iter : ${slots}" th:with="bookable=${slot.isBookableAt(now)}"
+                        th:classappend="${bookable} ? 'is-selectable' : 'is-unavailable'">
+                        <label class="slot-option">
+                            <input type="radio" name="slotId" th:value="${slot.id}" th:disabled="${!bookable}" required
+                                   th:checked="${bookable and iter.first}">
+                            <span>
+                                <span class="slot-list__date" th:text="${#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM')}">sábado 12 de octubre</span>
+                                <span class="slot-list__sub"
+                                      th:text="${#temporals.format(slot.startTime, 'HH:mm') + ' · '
+                                                + (slot.soldOut ? 'Agotado' : (!bookable ? 'Reservas cerradas' : (slot.availability == 1 ? '1 lugar' : slot.availability + ' lugares')))}">17:30 · 12 lugares</span>
+                            </span>
+                        </label>
+                        <span class="slot-list__price" th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.900</span>
+                    </li>
+                </ul>
 
-            <!-- CU-07 7b: para reservar hay que iniciar sesion -->
-            <th:block th:unless="${slots.isEmpty()}">
-                <a class="btn btn--primary btn--lg btn--block" th:if="${currentUser == null}" th:href="@{/login}">Iniciá sesión para reservar</a>
-                <button class="btn btn--primary btn--lg btn--block" th:if="${currentUser != null and currentUser.tourist}" disabled>Reservas disponibles próximamente</button>
+                <th:block th:if="${currentUser == null or currentUser.tourist}">
+                    <div class="field booking-card__quantity">
+                        <label for="participants">Personas</label>
+                        <input class="input" type="number" id="participants" name="participants" value="1" min="1" max="20" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--lg btn--block"
+                            th:text="${currentUser == null} ? 'Iniciá sesión para reservar' : 'Reservar'">Reservar</button>
+                </th:block>
                 <p class="booking-card__note" th:if="${currentUser != null and !currentUser.tourist}">
                     <svg th:replace="~{fragments/icons :: icon-sized('info', 'icon--sm')}"></svg>
                     Solo las cuentas de turista pueden reservar.
                 </p>
-            </th:block>
+            </form>
+            <!-- CU-07 7a -->
+            <p class="muted" th:if="${slots.isEmpty()}">No hay fechas disponibles por el momento.</p>
             <p class="booking-card__note">
                 <svg th:replace="~{fragments/icons :: icon-sized('lock', 'icon--sm')}"></svg>
                 La reserva se confirma cuando el pago es aprobado.

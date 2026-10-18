@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 // Emprendimiento (RF-01). Los cambios de estado se hacen solo con los metodos de abajo,
@@ -81,9 +82,12 @@ public class Business {
             inverseJoinColumns = @JoinColumn(name = "provider_id"))
     private Set<Provider> providers = new HashSet<>();
 
+    // Los servicios la fijan con el Clock de la aplicacion; esto es solo un respaldo
     @PrePersist
     void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     public void addProvider(Provider provider) {
@@ -91,24 +95,42 @@ public class Business {
         provider.getBusinesses().add(this);
     }
 
-    public void approve() {
+    public boolean hasProvider(Long providerId) {
+        return providers.stream().anyMatch(provider -> Objects.equals(provider.getId(), providerId));
+    }
+
+    public boolean isApproved() {
+        return status == BusinessStatus.APPROVED;
+    }
+
+    // "now" lo pasa el servicio, tomado del Clock de la aplicacion, para poder fijar la hora en los tests
+    public void approve(LocalDateTime now) {
         requireStatus(BusinessStatus.PENDING, "Solo se pueden aprobar emprendimientos pendientes.");
-        changeStatus(BusinessStatus.APPROVED, null);
+        changeStatus(BusinessStatus.APPROVED, null, now);
     }
 
-    public void deny(String reason) {
+    public void deny(String reason, LocalDateTime now) {
         requireStatus(BusinessStatus.PENDING, "Solo se pueden denegar emprendimientos pendientes.");
-        changeStatus(BusinessStatus.DENIED, reason);
+        changeStatus(BusinessStatus.DENIED, reason, now);
     }
 
-    public void suspend(String reason) {
+    public void suspend(String reason, LocalDateTime now) {
         requireStatus(BusinessStatus.APPROVED, "Solo se pueden suspender emprendimientos aprobados.");
-        changeStatus(BusinessStatus.SUSPENDED, reason);
+        changeStatus(BusinessStatus.SUSPENDED, reason, now);
     }
 
-    public void reactivate() {
+    public void reactivate(LocalDateTime now) {
         requireStatus(BusinessStatus.SUSPENDED, "Solo se pueden reactivar emprendimientos suspendidos.");
-        changeStatus(BusinessStatus.APPROVED, null);
+        changeStatus(BusinessStatus.APPROVED, null, now);
+    }
+
+    // CU-02 5c: un emprendimiento denegado se vuelve a postular con los datos corregidos.
+    // Queda pendiente y sin revisar, como una solicitud nueva.
+    public void resubmit() {
+        requireStatus(BusinessStatus.DENIED, "Solo se pueden volver a postular emprendimientos denegados.");
+        status = BusinessStatus.PENDING;
+        statusReason = null;
+        reviewedAt = null;
     }
 
     private void requireStatus(BusinessStatus expected, String message) {
@@ -117,9 +139,9 @@ public class Business {
         }
     }
 
-    private void changeStatus(BusinessStatus newStatus, String reason) {
+    private void changeStatus(BusinessStatus newStatus, String reason, LocalDateTime now) {
         status = newStatus;
         statusReason = reason;
-        reviewedAt = LocalDateTime.now();
+        reviewedAt = now;
     }
 }

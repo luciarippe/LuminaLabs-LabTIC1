@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -88,14 +90,33 @@ public class Activity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    // Los servicios la fijan con el Clock de la aplicacion; esto es solo un respaldo
     @PrePersist
     void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     public Slot addSlot(Slot slot) {
         slots.add(slot);
         return slot;
+    }
+
+    // CU-01 3a: la edad se cuenta al dia de la actividad, no al dia en que se reserva
+    public boolean allowsParticipantBornOn(LocalDate birthDate, LocalDate activityDate) {
+        return minimumAge == null || Period.between(birthDate, activityDate).getYears() >= minimumAge;
+    }
+
+    // RNF-10: un prestador solo gestiona las actividades de sus propios emprendimientos
+    public boolean isManagedBy(Long providerId) {
+        return business.hasProvider(providerId);
+    }
+
+    // CU-04 4: no puede haber dos slots activos de la misma actividad a la misma hora. Los cancelados no
+    // cuentan. La base lo garantiza igual con la restriccion unica de Slot; esto es para mostrar un buen mensaje.
+    public boolean hasActiveSlotAt(LocalDateTime startTime, Slot except) {
+        return slots.stream().anyMatch(slot -> slot != except && slot.isActive() && slot.getStartTime().equals(startTime));
     }
 
     // "2 h 30 min", "45 min", "3 h"
