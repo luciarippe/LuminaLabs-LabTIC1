@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Mi cuenta')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('account')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Usuarios</span>
+                <h1>Mi cuenta</h1>
+                <p>Tus datos de administrador y tu contraseña.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section th:replace="~{fragments/account :: hero(${admin}, 'Administrador', null, null, null)}"></section>
+        <div th:replace="~{fragments/account :: forms(${admin}, '/admin/account', null)}"></div>
+    </main>
+</div>
+</body>
+</html>

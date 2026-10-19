@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Redes sociales de un emprendimiento del prestador (se muestran en el detalle de sus actividades) -->
+<head th:replace="~{fragments/layout :: head('Redes sociales')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('businesses')}"></aside>
+
+    <main class="admin-main">
+        <div class="breadcrumb">
+            <a th:href="@{/provider/businesses}">Mis emprendimientos</a> / <span th:text="${business.legalName}">Emprendimiento</span>
+        </div>
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow" th:text="${business.legalName}">Emprendimiento</span>
+                <h1>Redes sociales</h1>
+                <p>Los turistas las ven en el detalle de tus actividades, en "Organizado por", para conocer más de tu emprendimiento.</p>
+            </div>
+        </div>
+
+        <div class="admin-form-layout">
+            <section class="panel">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('globe', '')}"></svg></span>
+                    <div class="panel__title">
+                        <h2>Dónde encontrarte</h2>
+                        <p>Todas son opcionales: dejá vacías las que no uses.</p>
+                    </div>
+                </div>
+                <form th:action="@{/provider/businesses/{id}/social(id=${business.id})}" th:object="${form}" method="post" novalidate>
+                    <div class="panel__body">
+                        <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                            <strong>Revisá los links marcados.</strong>
+                        </div>
+                        <th:block th:replace="~{fragments/social :: fields('')}"></th:block>
+                    </div>
+                    <div class="panel__foot">
+                        <a class="btn btn--ghost" th:href="@{/provider/businesses}">Cancelar</a>
+                        <button type="submit" class="btn btn--primary">Guardar redes</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="panel">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('info', '')}"></svg></span>
+                    <div class="panel__title"><h2>Así se ven</h2></div>
+                </div>
+                <div class="panel__body">
+                    <div th:replace="~{fragments/social :: links(${business})}"></div>
+                    <p class="muted small" style="margin: 0" th:unless="${business.hasSocialLinks()}">Todavía no cargaste ninguna red.</p>
+                    <p class="muted small" style="margin: 12px 0 0" th:if="${business.hasSocialLinks()}">Cada botón abre la red en una pestaña nueva.</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

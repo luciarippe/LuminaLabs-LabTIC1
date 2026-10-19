@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Emprendimientos del prestador, cada uno con su estado y sus actividades (CU-03) -->
+<head th:replace="~{fragments/layout :: head('Mis emprendimientos')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('businesses')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Emprendimientos</span>
+                <h1>Mis emprendimientos</h1>
+                <p>El estado de cada emprendimiento y las actividades que publicaste en él.</p>
+            </div>
+            <a class="btn" th:href="@{/provider/businesses/new}">
+                <svg th:replace="~{fragments/icons :: icon-sized('file-text', 'icon--sm')}"></svg> Registrar otro
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section class="panel" th:each="business : ${businesses}"
+                 th:with="activities=${activitiesByBusiness.get(business.id)}">
+            <div class="panel__head">
+                <span class="initials" th:classappend="${@view.avatarColor(business.id)}"
+                      th:text="${@view.initials(business.legalName)}">CE</span>
+                <div class="panel__title">
+                    <h2 th:text="${business.legalName}">Emprendimiento</h2>
+                    <p th:text="|${business.type.label} · ${business.type.identifierLabel} ${business.identifier}|">Empresa · RUT</p>
+                </div>
+                <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
+                      th:text="${business.status.label}">Aprobado</span>
+                <a class="btn btn--sm" th:href="@{/provider/businesses/{id}/social(id=${business.id})}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('globe', 'icon--sm')}"></svg> Redes sociales
+                </a>
+                <a class="btn btn--primary btn--sm" th:if="${business.approved}"
+                   th:href="@{/provider/activities/new(businessId=${business.id})}">Nueva actividad</a>
+            </div>
+
+            <!-- Redes cargadas (las mismas que ven los turistas) -->
+            <div class="panel__body social-row" th:if="${business.hasSocialLinks()}">
+                <div th:replace="~{fragments/social :: links(${business})}"></div>
+            </div>
+
+            <!-- Estado de la solicitud (si no esta aprobado) -->
+            <div class="panel__body" th:unless="${business.approved and business.statusReason == null}">
+                <div class="reason-box" th:if="${business.statusReason}"
+                     th:classappend="${business.status.name() == 'DENIED'} ? 'reason-box--denied' : 'reason-box--suspended'">
+                    <strong>Motivo:</strong> <span th:text="${business.statusReason}"></span>
+                </div>
+                <p class="muted small status-note" th:if="${business.status.name() == 'PENDING'}">
+                    Tu solicitud está en revisión. Cuando sea aprobada vas a poder publicar actividades.</p>
+                <p class="muted small status-note" th:if="${business.status.name() == 'SUSPENDED'}">
+                    Mientras esté suspendido, sus actividades no se muestran en el portal y no se pueden modificar.</p>
+                <p class="muted small status-note" th:if="${business.status.name() == 'DENIED'}">
+                    Podés <a th:href="@{/provider/businesses/new}">volver a postularlo</a> con los datos corregidos usando el mismo identificador.</p>
+            </div>
+
+            <div class="table-wrap" th:if="${activities != null}">
+                <table class="table">
+                    <thead><tr><th>Actividad</th><th>Localidad</th><th>Duración</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+                    <tbody>
+                    <tr th:each="activity : ${activities}">
+                        <td>
+                            <span class="cell-title" th:text="${activity.name}">Nombre</span>
+                            <span class="cell-sub" th:text="${#strings.listJoin(activity.categories.![name], ' · ')}">Categorías</span>
+                        </td>
+                        <td th:text="|${activity.location.name}, ${activity.location.department.label}|">Localidad</td>
+                        <td th:text="${activity.durationLabel}">2 h</td>
+                        <td class="cell-actions">
+                            <a class="btn btn--sm" th:href="@{/provider/activities/{id}(id=${activity.id})}">Fechas y detalle</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="empty-state" th:if="${activities == null and business.approved}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></div>
+                <h3>Todavía no hay actividades</h3>
+                <p>Publicá la primera actividad de este emprendimiento.</p>
+                <a class="btn btn--primary btn--sm" th:href="@{/provider/activities/new(businessId=${business.id})}">Nueva actividad</a>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

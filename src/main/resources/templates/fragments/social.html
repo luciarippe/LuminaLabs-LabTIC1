@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Redes sociales de un emprendimiento: botones que abren cada red en una pestana nueva.
+     Uso: th:replace="~{fragments/social :: links(${business})}". No muestra nada si no cargo ninguna. -->
+<body>
+<div th:fragment="links(business)" class="social-links" th:if="${business.hasSocialLinks()}">
+    <a class="social-link" th:if="${business.websiteUrl}" th:href="${business.websiteUrl}"
+       target="_blank" rel="noopener noreferrer nofollow" th:title="${business.websiteUrl}">
+        <svg th:replace="~{fragments/icons :: icon-sized('globe', 'icon--sm')}"></svg> Sitio web
+    </a>
+    <a class="social-link social-link--instagram" th:if="${business.instagramUrl}" th:href="${business.instagramUrl}"
+       target="_blank" rel="noopener noreferrer nofollow" th:title="${business.instagramUrl}">
+        <svg th:replace="~{fragments/icons :: icon-sized('instagram', 'icon--sm')}"></svg> Instagram
+    </a>
+    <a class="social-link social-link--facebook" th:if="${business.facebookUrl}" th:href="${business.facebookUrl}"
+       target="_blank" rel="noopener noreferrer nofollow" th:title="${business.facebookUrl}">
+        <svg th:replace="~{fragments/icons :: icon-sized('facebook', 'icon--sm')}"></svg> Facebook
+    </a>
+    <a class="social-link social-link--tiktok" th:if="${business.tiktokUrl}" th:href="${business.tiktokUrl}"
+       target="_blank" rel="noopener noreferrer nofollow" th:title="${business.tiktokUrl}">
+        <svg th:replace="~{fragments/icons :: icon-sized('tiktok', 'icon--sm')}"></svg> TikTok
+    </a>
+</div>
+
+<!-- Campos para cargarlas. Dentro de un th:object; "prefix" es el camino hasta el SocialLinksForm
+     ('business.social.' en el registro, '' en la pantalla de redes). -->
+<th:block th:fragment="fields(prefix)">
+    <div class="social-fields">
+        <div class="field">
+            <label th:for="|${prefix}instagram|"><svg th:replace="~{fragments/icons :: icon-sized('instagram', 'icon--sm')}"></svg> Instagram</label>
+            <input class="input" type="text" th:field="*{__${prefix}__instagram}" th:errorclass="is-invalid" placeholder="@tuemprendimiento" autocomplete="off">
+            <span class="field-error" th:if="${#fields.hasErrors('__${prefix}__instagram')}" th:errors="*{__${prefix}__instagram}"></span>
+        </div>
+        <div class="field">
+            <label th:for="|${prefix}facebook|"><svg th:replace="~{fragments/icons :: icon-sized('facebook', 'icon--sm')}"></svg> Facebook</label>
+            <input class="input" type="text" th:field="*{__${prefix}__facebook}" th:errorclass="is-invalid" placeholder="facebook.com/tuemprendimiento" autocomplete="off">
+            <span class="field-error" th:if="${#fields.hasErrors('__${prefix}__facebook')}" th:errors="*{__${prefix}__facebook}"></span>
+        </div>
+        <div class="field">
+            <label th:for="|${prefix}tiktok|"><svg th:replace="~{fragments/icons :: icon-sized('tiktok', 'icon--sm')}"></svg> TikTok</label>
+            <input class="input" type="text" th:field="*{__${prefix}__tiktok}" th:errorclass="is-invalid" placeholder="@tuemprendimiento" autocomplete="off">
+            <span class="field-error" th:if="${#fields.hasErrors('__${prefix}__tiktok')}" th:errors="*{__${prefix}__tiktok}"></span>
+        </div>
+        <div class="field">
+            <label th:for="|${prefix}website|"><svg th:replace="~{fragments/icons :: icon-sized('globe', 'icon--sm')}"></svg> Sitio web</label>
+            <input class="input" type="text" th:field="*{__${prefix}__website}" th:errorclass="is-invalid" placeholder="www.tuemprendimiento.com.uy" autocomplete="off">
+            <span class="field-error" th:if="${#fields.hasErrors('__${prefix}__website')}" th:errors="*{__${prefix}__website}"></span>
+        </div>
+    </div>
+    <span class="hint">Escribí tu usuario (ej.: @tuemprendimiento) o pegá el link. Todas son opcionales.</span>
+</th:block>
+</body>
+</html>

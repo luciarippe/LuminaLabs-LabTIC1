@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/layout :: head('Nuevo administrador')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('admin-new')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Usuarios</span>
+                <h1>Nuevo administrador</h1>
+                <p>Los administradores no se registran desde el sitio público: los da de alta otro administrador.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="admin-form-layout">
+            <section class="panel">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('user-plus', '')}"></svg></span>
+                    <div class="panel__title">
+                        <h2>Datos de la cuenta</h2>
+                        <p>Todos los campos son obligatorios.</p>
+                    </div>
+                </div>
+
+                <form th:action="@{/admin/admins/new}" th:object="${form}" method="post" novalidate data-validate>
+                    <div class="panel__body">
+                        <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                            <strong>Revisá los campos marcados.</strong>
+                        </div>
+
+                        <div class="form-block">
+                            <h3 class="form-block__title">Datos personales</h3>
+                            <p class="form-block__intro">Quién es la persona que va a administrar la plataforma.</p>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="firstName">Nombre</label>
+                                    <input class="input" type="text" th:field="*{firstName}" th:errorclass="is-invalid" autocomplete="off">
+                                    <span class="field-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></span>
+                                </div>
+                                <div class="field">
+                                    <label for="lastName">Apellido</label>
+                                    <input class="input" type="text" th:field="*{lastName}" th:errorclass="is-invalid" autocomplete="off">
+                                    <span class="field-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></span>
+                                </div>
+                                <div class="field">
+                                    <label for="birthDate">Fecha de nacimiento</label>
+                                    <input class="input" type="date" th:field="*{birthDate}" th:errorclass="is-invalid">
+                                    <span class="field-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
+                                </div>
+                                <div class="field">
+                                    <label for="email">Correo electrónico</label>
+                                    <input class="input" type="email" th:field="*{email}" th:errorclass="is-invalid" autocomplete="off">
+                                    <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-block">
+                            <h3 class="form-block__title">Acceso a la plataforma</h3>
+                            <p class="form-block__intro">Con estos datos va a iniciar sesión. Le enviamos el usuario y la contraseña por correo.</p>
+                            <div class="form-grid">
+                                <div class="field span-2">
+                                    <label for="username">Nombre de usuario</label>
+                                    <input class="input" type="text" th:field="*{username}" th:errorclass="is-invalid" autocomplete="off">
+                                    <span class="hint">De 3 a 30 caracteres: letras sin tilde, números, punto, guion o guion bajo.</span>
+                                    <span class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
+                                </div>
+                                <div class="field">
+                                    <label for="password">Contraseña inicial</label>
+                                    <div class="input-group">
+                                        <input class="input" type="password" th:field="*{password}" th:errorclass="is-invalid" autocomplete="new-password">
+                                        <button type="button" class="input-group__action" data-toggle-password="password">Mostrar</button>
+                                    </div>
+                                    <span class="hint">Mínimo 8 caracteres.</span>
+                                    <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+                                </div>
+                                <div class="field">
+                                    <label for="confirmPassword">Repetir contraseña</label>
+                                    <input class="input" type="password" th:field="*{confirmPassword}" th:errorclass="is-invalid" autocomplete="new-password">
+                                    <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel__foot">
+                        <a class="btn btn--ghost" th:href="@{/admin}">Cancelar</a>
+                        <button type="submit" class="btn btn--primary">Crear administrador</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="panel">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('info', '')}"></svg></span>
+                    <div class="panel__title"><h2>¿Qué pasa al crearlo?</h2></div>
+                </div>
+                <div class="panel__body">
+                    <ol class="steps">
+                        <li><strong>Se crea la cuenta</strong><span>Con los mismos permisos que vos: revisar emprendimientos y dar de alta administradores.</span></li>
+                        <li><strong>Le llega un correo</strong><span>Con su nombre de usuario y la contraseña inicial que elegiste.</span></li>
+                        <li><strong>Ingresa y la cambia</strong><span>Desde "Mi cuenta" puede elegir una contraseña propia.</span></li>
+                    </ol>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

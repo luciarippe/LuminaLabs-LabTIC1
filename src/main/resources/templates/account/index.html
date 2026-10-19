@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Mi cuenta del turista (TouristAccountController): datos personales y cambio de contrasena -->
+<head th:replace="~{fragments/layout :: head('Mi cuenta')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page account-page">
+    <div class="page-header">
+        <span class="eyebrow">Tu cuenta</span>
+        <h1>Mi cuenta</h1>
+        <p>Tus datos personales y tu contraseña.</p>
+    </div>
+
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+    <section th:replace="~{fragments/account :: hero(${user}, 'Turista', '/reservations', 'Mis reservas', 'calendar')}"></section>
+    <div th:replace="~{fragments/account :: forms(${user}, ${accountPath}, ${emailHint})}"></div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

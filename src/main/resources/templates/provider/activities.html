@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Todas las actividades del prestador, con su proxima fecha y precio "desde" -->
+<head th:replace="~{fragments/layout :: head('Mis actividades')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('activities')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Actividades</span>
+                <h1>Mis actividades</h1>
+                <p>Todas las actividades que publicaste. Entrá a cada una para cargar o cambiar sus fechas y horarios.</p>
+            </div>
+            <a class="btn btn--primary" th:if="${canPublish}" th:href="@{/provider/activities/new}">
+                <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg> Nueva actividad
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section class="panel">
+            <div class="admin-toolbar" th:unless="${activities.isEmpty()}">
+                <div class="admin-search">
+                    <label class="visually-hidden" for="activity-filter">Buscar actividad</label>
+                    <div class="admin-search__field">
+                        <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg>
+                        <input class="input" type="search" id="activity-filter" placeholder="Buscar por nombre, emprendimiento o localidad…"
+                               data-table-filter="activity-table">
+                    </div>
+                </div>
+                <span class="muted small" th:text="${activities.size() == 1} ? '1 actividad' : |${activities.size()} actividades|">0 actividades</span>
+            </div>
+
+            <div class="table-wrap" th:unless="${activities.isEmpty()}">
+                <table class="table" id="activity-table">
+                    <thead>
+                    <tr><th>Actividad</th><th>Emprendimiento</th><th>Localidad</th><th>Próxima fecha</th><th>Desde</th><th><span class="visually-hidden">Acciones</span></th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="activity : ${activities}" th:with="summary=${summaries.get(activity.id)}">
+                        <td>
+                            <span class="cell-title" th:text="${activity.name}">Nombre</span>
+                            <span class="cell-sub" th:text="|${#strings.listJoin(activity.categories.![name], ' · ')} · ${activity.durationLabel}|">Categorías · 2 h</span>
+                        </td>
+                        <td>
+                            <span th:text="${activity.business.legalName}">Emprendimiento</span>
+                            <span class="badge badge--suspended" th:unless="${activity.business.approved}"
+                                  th:text="${activity.business.status.label}">Suspendido</span>
+                        </td>
+                        <td th:text="|${activity.location.name}, ${activity.location.department.label}|">Localidad</td>
+                        <td>
+                            <th:block th:if="${summary != null}">
+                                <span class="nowrap" th:text="${#temporals.format(summary.nextStart, 'EEE dd/MM')}">sáb 01/11</span>
+                                <span class="cell-sub" th:text="${#temporals.format(summary.nextStart, 'HH:mm')} + ' h'">10:00 h</span>
+                            </th:block>
+                            <span class="badge badge--pending" th:if="${summary == null}">Sin fechas</span>
+                            <!-- Horarios por terminarse: cuantos dias quedan hasta el ultimo. El th:with va en un bloque
+                                 aparte porque Thymeleaf evalua th:if antes que th:with en el mismo elemento. -->
+                            <th:block th:with="item=${runningOutById.get(activity.id)}">
+                                <span class="badge badge--denied runout-badge" th:if="${item != null and !item.hasNoSlots()}"
+                                      th:text="${item.daysLeft() == 0} ? 'Terminan hoy' : (${item.daysLeft() == 1} ? 'Terminan mañana' : |Terminan en ${item.daysLeft()} días|)">Terminan en 12 días</span>
+                            </th:block>
+                        </td>
+                        <td class="nowrap" th:text="${summary != null} ? |$ ${#numbers.formatDecimal(summary.fromPrice, 1, 'POINT', 0, 'COMMA')}| : '—'">$ 1.500</td>
+                        <td class="cell-actions">
+                            <a class="btn btn--sm" th:href="@{/provider/activities/{id}(id=${activity.id})}">Gestionar</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="empty-state" data-table-empty="activity-table" hidden>
+                    <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('search', '')}"></svg></div>
+                    <h3>Sin resultados</h3>
+                    <p>Ninguna actividad coincide con la búsqueda.</p>
+                </div>
+            </div>
+
+            <div class="empty-state" th:if="${activities.isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></div>
+                <h3>Todavía no publicaste actividades</h3>
+                <p th:text="${canPublish} ? 'Publicá tu primera actividad y después cargale fechas, horarios y precios.' : 'Vas a poder publicar actividades cuando tengas un emprendimiento aprobado.'">Texto</p>
+                <a class="btn btn--primary btn--sm" th:if="${canPublish}" th:href="@{/provider/activities/new}">Nueva actividad</a>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

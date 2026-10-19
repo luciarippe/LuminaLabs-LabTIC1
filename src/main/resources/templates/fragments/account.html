@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Partes de "Mi cuenta", comunes a turistas, prestadores y administradores.
+     Las paginas: account/index (turista), provider/account y admin/account. -->
+<body>
+
+<!-- Cabecera con los datos del usuario. Si shortcutUrl es null se muestra el rol en vez del boton. -->
+<section th:fragment="hero(user, roleLabel, shortcutUrl, shortcutLabel, shortcutIcon)" class="panel profile-hero">
+    <span class="initials initials--lg initials--round" th:classappend="${@view.avatarColor(user.id)}"
+          th:text="${@view.initials(user.fullName)}">JG</span>
+    <div class="profile-hero__main">
+        <h2 th:text="${user.fullName}">Nombre Apellido</h2>
+        <div class="profile-hero__meta">
+            <span><svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> <span th:text="|@${user.username}|">@usuario</span></span>
+            <span><svg th:replace="~{fragments/icons :: icon-sized('mail', 'icon--sm')}"></svg> <span th:text="${user.email}">correo</span></span>
+        </div>
+    </div>
+    <a class="btn" th:if="${shortcutUrl != null}" th:href="@{${shortcutUrl}}">
+        <svg th:replace="~{fragments/icons :: icon-sized(${shortcutIcon}, 'icon--sm')}"></svg>
+        <span th:text="${shortcutLabel}">Mis reservas</span>
+    </a>
+    <span class="badge badge--approved" th:if="${shortcutUrl == null}" th:text="${roleLabel}">Rol</span>
+</section>
+
+<!-- Los dos formularios: "Mis datos" (accountPath/profile) y "Cambiar contrasena" (accountPath/password).
+     Usan profileForm y passwordForm del modelo. -->
+<div th:fragment="forms(user, accountPath, emailHint)" class="account-layout">
+    <section class="panel">
+        <div class="panel__head">
+            <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('id-card', '')}"></svg></span>
+            <div class="panel__title">
+                <h2>Mis datos</h2>
+                <p>Los usamos para identificarte y para escribirte.</p>
+            </div>
+        </div>
+
+        <form th:action="@{${accountPath} + '/profile'}" th:object="${profileForm}" method="post" novalidate data-validate>
+            <div class="panel__body">
+                <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                    <strong>Revisá los campos marcados.</strong>
+                </div>
+
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <span class="label">Nombre de usuario</span>
+                        <span class="readonly-value">
+                            <svg th:replace="~{fragments/icons :: icon-sized('lock', 'icon--sm')}"></svg>
+                            <span th:text="${user.username}">usuario</span>
+                        </span>
+                        <span class="hint">Es con lo que iniciás sesión; no se puede cambiar.</span>
+                    </div>
+                    <div class="field">
+                        <label for="firstName">Nombre</label>
+                        <input class="input" type="text" th:field="*{firstName}" th:errorclass="is-invalid" autocomplete="given-name">
+                        <span class="field-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="lastName">Apellido</label>
+                        <input class="input" type="text" th:field="*{lastName}" th:errorclass="is-invalid" autocomplete="family-name">
+                        <span class="field-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="birthDate">Fecha de nacimiento</label>
+                        <input class="input" type="date" th:field="*{birthDate}" th:errorclass="is-invalid" autocomplete="bday">
+                        <span class="field-error" th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></span>
+                    </div>
+                    <div class="field">
+                        <label for="email">Correo electrónico</label>
+                        <input class="input" type="email" th:field="*{email}" th:errorclass="is-invalid" autocomplete="email">
+                        <span class="hint" th:if="${emailHint != null}" th:text="${emailHint}">Para qué usamos tu correo.</span>
+                        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel__foot">
+                <button type="submit" class="btn btn--primary">Guardar cambios</button>
+            </div>
+        </form>
+    </section>
+
+    <aside class="panel">
+        <div class="panel__head">
+            <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('key', '')}"></svg></span>
+            <div class="panel__title">
+                <h2>Cambiar contraseña</h2>
+                <p>Te pedimos la actual para confirmar que sos vos.</p>
+            </div>
+        </div>
+
+        <form th:action="@{${accountPath} + '/password'}" th:object="${passwordForm}" method="post" novalidate data-validate>
+            <div class="panel__body form-stack">
+                <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
+                    <strong>Revisá los campos marcados.</strong>
+                </div>
+
+                <div class="field">
+                    <label for="currentPassword">Contraseña actual</label>
+                    <input class="input" type="password" th:field="*{currentPassword}" th:errorclass="is-invalid" autocomplete="current-password">
+                    <span class="field-error" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></span>
+                </div>
+                <div class="field">
+                    <label for="newPassword">Contraseña nueva</label>
+                    <div class="input-group">
+                        <input class="input" type="password" th:field="*{newPassword}" th:errorclass="is-invalid" autocomplete="new-password">
+                        <button type="button" class="input-group__action" data-toggle-password="newPassword">Mostrar</button>
+                    </div>
+                    <span class="field-error" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></span>
+                </div>
+                <div class="field">
+                    <label for="confirmPassword">Repetir contraseña nueva</label>
+                    <input class="input" type="password" th:field="*{confirmPassword}" th:errorclass="is-invalid" autocomplete="new-password">
+                    <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
+                </div>
+
+                <ul class="tip-list">
+                    <li><svg th:replace="~{fragments/icons :: icon-sized('check', 'icon--sm')}"></svg> Entre 8 y 72 caracteres.</li>
+                    <li><svg th:replace="~{fragments/icons :: icon-sized('check', 'icon--sm')}"></svg> Distinta de la contraseña actual.</li>
+                </ul>
+            </div>
+
+            <div class="panel__foot">
+                <button type="submit" class="btn btn--primary btn--block">Cambiar contraseña</button>
+            </div>
+        </form>
+    </aside>
+</div>
+
+</body>
+</html>

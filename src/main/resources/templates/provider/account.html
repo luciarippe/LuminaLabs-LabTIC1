@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Mi cuenta del prestador (ProviderAccountController): datos personales y cambio de contrasena -->
+<head th:replace="~{fragments/layout :: head('Mi cuenta')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('account')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Cuenta</span>
+                <h1>Mi cuenta</h1>
+                <p>Tus datos personales y tu contraseña.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section th:replace="~{fragments/account :: hero(${user}, 'Prestador', null, null, null)}"></section>
+        <div th:replace="~{fragments/account :: forms(${user}, ${accountPath}, ${emailHint})}"></div>
+    </main>
+</div>
+</body>
+</html>

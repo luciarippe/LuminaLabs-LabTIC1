@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Emprendimientos rechazados (CU-06 5a) o suspendidos (CU-11), con el motivo y la fecha del cambio de estado.
+     "status" es DENIED o SUSPENDED; los textos cambian segun cual sea. -->
+<head th:replace="~{fragments/layout :: head(${status.name() == 'DENIED'} ? 'Emprendimientos rechazados' : 'Emprendimientos suspendidos')}"></head>
+<body>
+<div class="admin-shell" th:with="denied=${status.name() == 'DENIED'},
+                                  basePath=${denied} ? '/admin/businesses/denied' : '/admin/businesses/suspended',
+                                  noun=${denied} ? 'rechazado' : 'suspendido'">
+    <aside th:replace="~{fragments/admin :: sidebar(${denied} ? 'denied' : 'suspended')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Emprendimientos</span>
+                <h1 th:text="${denied} ? 'Rechazados' : 'Suspendidos'">Rechazados</h1>
+                <p th:if="${denied}">Las solicitudes que se denegaron y por qué. Si el prestador vuelve a postular un
+                    emprendimiento con los datos corregidos, pasa de nuevo a <a th:href="@{/admin/businesses(status='PENDING')}">Solicitudes</a>.</p>
+                <p th:unless="${denied}">Los emprendimientos suspendidos y por qué. Sus actividades no se muestran en el
+                    portal hasta que los reactives desde el detalle.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section class="panel">
+            <div class="admin-toolbar">
+                <form class="admin-search" th:action="@{${basePath}}" method="get" role="search">
+                    <label class="visually-hidden" for="reason-search">Buscar emprendimiento</label>
+                    <div class="admin-search__field">
+                        <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg>
+                        <input class="input" type="search" id="reason-search" name="q" th:value="${query}"
+                               placeholder="Buscar por nombre o RUT/cédula…" maxlength="150">
+                    </div>
+                    <button type="submit" class="btn btn--primary">Buscar</button>
+                    <a class="btn btn--ghost" th:if="${!query.isEmpty()}" th:href="@{${basePath}}">Volver al listado</a>
+                </form>
+                <span class="muted small"
+                      th:text="${query.isEmpty()} ? (${businesses.size() == 1} ? |1 ${noun}| : |${businesses.size()} ${noun}s|) : (${businesses.size() == 1} ? |1 resultado para «${query}»| : |${businesses.size()} resultados para «${query}»|)">0 rechazados</span>
+            </div>
+
+            <div class="table-wrap" th:unless="${businesses.isEmpty()}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Emprendimiento</th>
+                        <th>Identificador</th>
+                        <th th:text="${denied} ? 'Motivo del rechazo' : 'Motivo de la suspensión'">Motivo</th>
+                        <th th:text="${denied} ? 'Rechazado' : 'Suspendido'">Fecha</th>
+                        <th><span class="visually-hidden">Acciones</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="business : ${businesses}">
+                        <td>
+                            <div class="entity">
+                                <span class="initials" th:classappend="${@view.avatarColor(business.id)}"
+                                      th:text="${@view.initials(business.legalName)}">CE</span>
+                                <div class="entity__text">
+                                    <span class="cell-title" th:text="${business.legalName}">Nombre</span>
+                                    <span class="cell-sub" th:text="${business.providers.isEmpty()} ? ${business.type.label} : |${business.type.label} · ${business.providers.iterator().next().fullName}|">Empresa · Prestador</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="nowrap" th:text="${business.identifier}">123</span>
+                            <span class="cell-sub" th:text="${business.type.identifierLabel}">RUT</span>
+                        </td>
+                        <td class="reason-cell">
+                            <span class="reason-preview" th:text="${business.statusReason}" th:title="${business.statusReason}">Motivo</span>
+                        </td>
+                        <td>
+                            <th:block th:if="${business.reviewedAt != null}">
+                                <span class="nowrap" th:text="${#temporals.format(business.reviewedAt, 'dd/MM/yyyy')}">01/01/2026</span>
+                                <span class="cell-sub" th:text="${#temporals.format(business.reviewedAt, 'HH:mm')}">10:00</span>
+                            </th:block>
+                            <span class="muted" th:if="${business.reviewedAt == null}">—</span>
+                        </td>
+                        <td class="cell-actions">
+                            <a class="btn btn--sm" th:href="@{/admin/businesses/{id}(id=${business.id})}">Ver detalle</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${businesses.isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized(${query.isEmpty()} ? 'check' : 'search', '')}"></svg></div>
+                <h3 th:text="${query.isEmpty()} ? |No hay emprendimientos ${noun}s| : 'Sin resultados'">Sin resultados</h3>
+                <p th:if="${query.isEmpty() and denied}">Ninguna solicitud fue denegada (o todas se volvieron a postular).</p>
+                <p th:if="${query.isEmpty() and !denied}">No hay emprendimientos suspendidos en este momento.</p>
+                <p th:unless="${query.isEmpty()}"
+                   th:text="|Ningún emprendimiento ${noun} coincide con «${query}». Probá con otra parte del nombre o del RUT/cédula.|">Sin resultados</p>
+                <a class="btn btn--sm" th:unless="${query.isEmpty()}" th:href="@{${basePath}}">Volver al listado</a>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

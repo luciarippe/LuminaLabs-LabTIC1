@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+<!-- Menu lateral del espacio del prestador (mismo diseno que el de administracion, ver .admin-shell en styles.css).
+     Uso: th:replace="~{fragments/provider :: sidebar('dashboard')}" -->
+<aside th:fragment="sidebar(active)" class="admin-sidebar">
+    <div class="admin-sidebar__brand">
+        <a class="brand" th:href="@{/provider}">
+            <span>Uruguay <strong>Mnatural</strong></span>
+        </a>
+        <span class="admin-badge">Espacio del prestador</span>
+    </div>
+
+    <nav class="admin-nav" aria-label="Espacio del prestador">
+        <span class="admin-nav__label">General</span>
+        <a th:href="@{/provider}" th:classappend="${active == 'dashboard'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('grid', 'icon--sm')}"></svg> Panel
+        </a>
+        <span class="admin-nav__label">Emprendimientos</span>
+        <a th:href="@{/provider/businesses}" th:classappend="${active == 'businesses'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('building', 'icon--sm')}"></svg> Mis emprendimientos
+        </a>
+        <a th:href="@{/provider/businesses/new}" th:classappend="${active == 'business-new'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('file-text', 'icon--sm')}"></svg> Nuevo emprendimiento
+        </a>
+        <span class="admin-nav__label">Actividades</span>
+        <a th:href="@{/provider/activities}" th:classappend="${active == 'activities'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('compass', 'icon--sm')}"></svg> Mis actividades
+            <!-- Actividades con los horarios por terminarse (ProviderModelAttributes) -->
+            <span class="admin-nav__count" th:if="${runningOutCount != null and runningOutCount > 0}" th:text="${runningOutCount}"
+                  th:title="${runningOutCount == 1} ? '1 actividad necesita horarios' : |${runningOutCount} actividades necesitan horarios|">2</span>
+        </a>
+        <a th:href="@{/provider/activities/new}" th:classappend="${active == 'activity-new'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg> Nueva actividad
+        </a>
+        <span class="admin-nav__label">Cuenta</span>
+        <a th:href="@{/provider/account}" th:classappend="${active == 'account'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> Mi cuenta
+        </a>
+        <span class="admin-nav__label">Sitio</span>
+        <a th:href="@{/}">
+            <svg th:replace="~{fragments/icons :: icon-sized('external', 'icon--sm')}"></svg> Ver portal público
+        </a>
+    </nav>
+
+    <div class="admin-sidebar__footer">
+        <div class="admin-user">
+            <a class="admin-user__avatar" th:href="@{/provider/account}" title="Mi cuenta"
+               th:text="${#strings.substring(currentUser.displayName, 0, 1)}">P</a>
+            <a class="admin-user__info" th:href="@{/provider/account}">
+                <span class="admin-user__name" th:text="${currentUser.displayName}">Prestador</span>
+                <span class="admin-user__role">Prestador</span>
+            </a>
+            <form class="inline-form" th:action="@{/logout}" method="post">
+                <button type="submit" class="admin-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+                    <svg th:replace="~{fragments/icons :: icon-sized('logout', 'icon--sm')}"></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+</body>
+</html>

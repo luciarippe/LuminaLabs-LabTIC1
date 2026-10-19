@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Configuracion > Localidades: la foto de cada localidad (CU-10). Se muestra en las tarjetas de destinos de la
+     portada y como imagen de las actividades que todavia no tienen fotos. -->
+<head th:replace="~{fragments/layout :: head('Localidades')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('locations')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Configuración</span>
+                <h1>Localidades</h1>
+                <p>La foto de cada localidad se muestra en la portada (en los destinos de su departamento) y en las
+                    actividades que todavía no tienen fotos propias.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section class="panel" th:each="entry : ${locationsByDepartment}">
+            <div class="panel__head">
+                <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('pin', '')}"></svg></span>
+                <div class="panel__title">
+                    <h2 th:text="${entry.key.label}">Departamento</h2>
+                    <p th:text="${entry.value.size() == 1} ? '1 localidad' : |${entry.value.size()} localidades|">2 localidades</p>
+                </div>
+            </div>
+            <div class="location-grid">
+                <article class="location-card" th:each="location : ${entry.value}" th:id="|location-${location.id}|">
+                    <div class="location-card__photo">
+                        <img th:if="${location.photoId != null}" th:src="@{/photos/{id}(id=${location.photoId})}" th:alt="${location.name}" loading="lazy">
+                        <span class="location-card__empty" th:if="${location.photoId == null}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('image', '')}"></svg> Sin foto
+                        </span>
+                    </div>
+                    <div class="location-card__body">
+                        <strong th:text="${location.name}">Localidad</strong>
+                        <!-- Subir o reemplazar: al elegir el archivo se envia solo (app.js); sin JavaScript, con el boton -->
+                        <form th:action="@{/admin/locations/{id}/photo(id=${location.id})}" method="post" enctype="multipart/form-data"
+                              class="location-card__form" data-auto-upload>
+                            <label class="btn btn--sm">
+                                <input type="file" name="photo" accept="image/jpeg,image/png" class="visually-hidden" data-auto-upload-input>
+                                <span th:text="${location.photoId == null} ? 'Subir foto' : 'Cambiar'">Subir foto</span>
+                            </label>
+                            <noscript><button type="submit" class="btn btn--sm btn--primary">Guardar</button></noscript>
+                        </form>
+                        <form th:if="${location.photoId != null}" th:action="@{/admin/locations/{id}/photo/delete(id=${location.id})}"
+                              method="post" class="location-card__form" th:attr="data-confirm=|¿Quitar la foto de ${location.name}?|">
+                            <button type="submit" class="btn btn--ghost btn--sm btn--danger-text">Quitar</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>
