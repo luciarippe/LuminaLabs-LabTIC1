@@ -8,44 +8,107 @@
     <main class="admin-main">
         <div class="admin-topbar">
             <div>
+                <span class="admin-eyebrow" th:text="${#temporals.format(#temporals.createNow(), 'EEEE d ''de'' MMMM')}">Lunes 19 de octubre</span>
                 <h1 th:text="|Hola, ${currentUser.displayName}|">Hola</h1>
-                <p>Resumen de los emprendimientos de la plataforma.</p>
+                <p>Este es el resumen de los emprendimientos de la plataforma.</p>
             </div>
         </div>
 
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
-        <div class="stat-grid">
-            <a class="stat stat--highlight" th:href="@{/admin/businesses(status='PENDING')}">
-                <span class="stat__label">Pendientes <span class="badge badge--pending">Revisar</span></span>
-                <span class="stat__value" th:text="${statusCounts.pending}">0</span>
+        <div class="kpi-grid">
+            <a class="kpi" th:classappend="${statusCounts.pending > 0} ? 'kpi--attention'"
+               th:href="@{/admin/businesses(status='PENDING')}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Pendientes de revisión</span>
+                    <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('inbox', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${statusCounts.pending}">0</span>
+                <span class="kpi__link">Revisar solicitudes <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
             </a>
-            <a class="stat" th:href="@{/admin/businesses(status='APPROVED')}">
-                <span class="stat__label">Aprobados</span>
-                <span class="stat__value" th:text="${statusCounts.approved}">0</span>
+            <a class="kpi" th:href="@{/admin/businesses(status='APPROVED')}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Aprobados</span>
+                    <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('check', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${statusCounts.approved}">0</span>
+                <span class="kpi__link">Ver aprobados <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
             </a>
-            <a class="stat" th:href="@{/admin/businesses(status='DENIED')}">
-                <span class="stat__label">Denegados</span>
-                <span class="stat__value" th:text="${statusCounts.denied}">0</span>
+            <a class="kpi" th:href="@{/admin/businesses(status='DENIED')}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Denegados</span>
+                    <span class="icon-chip icon-chip--red"><svg th:replace="~{fragments/icons :: icon-sized('x-circle', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${statusCounts.denied}">0</span>
+                <span class="kpi__link">Ver denegados <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
             </a>
-            <a class="stat" th:href="@{/admin/businesses(status='SUSPENDED')}">
-                <span class="stat__label">Suspendidos</span>
-                <span class="stat__value" th:text="${statusCounts.suspended}">0</span>
+            <a class="kpi" th:href="@{/admin/businesses(status='SUSPENDED')}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Suspendidos</span>
+                    <span class="icon-chip icon-chip--slate"><svg th:replace="~{fragments/icons :: icon-sized('pause', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${statusCounts.suspended}">0</span>
+                <span class="kpi__link">Ver suspendidos <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
             </a>
         </div>
 
-        <section class="card card--flush">
-            <div class="card__header">
-                <h2 style="font-size: 1.15rem">Solicitudes pendientes</h2>
-                <a class="btn btn--sm" th:href="@{/admin/businesses(status='PENDING')}" th:if="${!pendingBusinesses.isEmpty()}">Ver todas</a>
-            </div>
-            <div th:replace="~{admin/businesses :: businessTable(${pendingBusinesses})}"></div>
-            <div class="empty-state" th:if="${pendingBusinesses.isEmpty()}">
-                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('check', '')}"></svg></div>
-                <h3>Todo al día</h3>
-                <p>No hay solicitudes de emprendimientos pendientes de revisión.</p>
-            </div>
-        </section>
+        <div class="admin-columns">
+            <section class="panel panel--compact">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('inbox', '')}"></svg></span>
+                    <div class="panel__title">
+                        <h2>Solicitudes pendientes</h2>
+                        <p>Las más antiguas primero, en orden de llegada.</p>
+                    </div>
+                    <a class="btn btn--sm" th:href="@{/admin/businesses(status='PENDING')}" th:if="${!pendingBusinesses.isEmpty()}">Ver todas</a>
+                </div>
+                <div th:replace="~{admin/businesses :: businessTable(${pendingBusinesses})}"></div>
+                <div class="empty-state" th:if="${pendingBusinesses.isEmpty()}">
+                    <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('check', '')}"></svg></div>
+                    <h3>Todo al día</h3>
+                    <p>No hay solicitudes de emprendimientos pendientes de revisión.</p>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></span>
+                    <div class="panel__title">
+                        <h2>Accesos rápidos</h2>
+                    </div>
+                </div>
+                <ul class="quick-links">
+                    <li>
+                        <a th:href="@{/admin/businesses}">
+                            <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg></span>
+                            <span><strong>Buscar un emprendimiento</strong><span class="small">Por nombre o RUT/cédula.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/admin/admins/new}">
+                            <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('user-plus', 'icon--sm')}"></svg></span>
+                            <span><strong>Nuevo administrador</strong><span class="small">Dar de alta a otra persona del equipo.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/admin/account}">
+                            <span class="icon-chip icon-chip--slate"><svg th:replace="~{fragments/icons :: icon-sized('key', 'icon--sm')}"></svg></span>
+                            <span><strong>Mi cuenta</strong><span class="small">Tus datos y tu contraseña.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/}">
+                            <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('external', 'icon--sm')}"></svg></span>
+                            <span><strong>Ver portal público</strong><span class="small">Cómo ven el sitio los turistas.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </div>
     </main>
 </div>
 </body>

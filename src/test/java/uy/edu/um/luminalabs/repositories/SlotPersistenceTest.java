@@ -42,7 +42,7 @@ class SlotPersistenceTest {
         business.setType(BusinessType.INDIVIDUAL);
         business.setLegalName("Sierras de Lavalleja");
         business.setIdentifier("12345678");
-        business.setBankName("BROU");
+        business.setBank(Bank.BROU);
         business.setBankAccountNumber("001");
         business.setDescription("Caminatas");
         business.setContactEmail("a@b.uy");

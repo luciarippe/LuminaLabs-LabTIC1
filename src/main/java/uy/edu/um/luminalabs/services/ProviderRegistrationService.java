@@ -45,6 +45,7 @@ public class ProviderRegistrationService {
     private final AccountValidator accountValidator;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final SocialLinksService socialLinksService;
 
     @Transactional
     public Business register(ProviderRegistrationForm form) {
@@ -99,11 +100,16 @@ public class ProviderRegistrationService {
 
     // Formato del identificador y localidades. Devuelve las localidades elegidas.
     private List<Location> validateBusiness(BusinessForm form, Map<String, String> errors) {
+        socialLinksService.validate(form.getSocial(), BUSINESS + "social.", errors);
         String identifier = normalizeIdentifier(form.getIdentifier());
         if (!isValidIdentifier(form.getBusinessType(), identifier)) {
             errors.put(BUSINESS + "identifier", form.getBusinessType() == BusinessType.COMPANY
                     ? "El RUT debe tener 12 dígitos."
                     : "La cédula debe tener 7 u 8 dígitos.");
+        }
+        String accountError = form.getBank().accountNumberError(form.getBankAccountNumber());
+        if (accountError != null) {
+            errors.put(BUSINESS + "bankAccountNumber", accountError);
         }
         List<Long> locationIds = form.getLocationIds().stream().distinct().toList();
         List<Location> locations = locationRepository.findAllById(locationIds);
@@ -151,8 +157,9 @@ public class ProviderRegistrationService {
         business.setDescription(form.getDescription().trim());
         business.setContactEmail(form.getContactEmail().trim().toLowerCase(Locale.ROOT));
         business.setContactPhone(form.getContactPhone().trim());
-        business.setBankName(form.getBankName().trim());
+        business.setBank(form.getBank());
         business.setBankAccountNumber(form.getBankAccountNumber().trim());
+        socialLinksService.apply(business, form.getSocial());
         business.getLocations().clear();
         business.getLocations().addAll(locations);
         if (!business.hasProvider(provider.getId())) {
@@ -167,7 +174,7 @@ public class ProviderRegistrationService {
         return saved;
     }
 
-    // Acepta "1.234.567-8" o "21 1234560019" y guarda solo los digitos
+    // BusinessForm ya exige solo numeros; esto ademas descarta cualquier otro caracter por las dudas
     static String normalizeIdentifier(String identifier) {
         return identifier == null ? "" : identifier.replaceAll("\\D", "");
     }

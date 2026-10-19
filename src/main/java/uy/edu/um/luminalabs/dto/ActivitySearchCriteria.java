@@ -7,6 +7,8 @@ import uy.edu.um.luminalabs.entities.Department;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 // Filtros del buscador de actividades (RF-13). Todos son opcionales; se reciben como parametros de la URL.
 @Getter
@@ -40,5 +42,12 @@ public class ActivitySearchCriteria {
 
     public boolean hasAnyFilter() {
         return hasKeyword() || department != null || locationId != null || categoryId != null || hasSlotFilters();
+    }
+
+    // Cuantos filtros estan aplicados (para el contador del panel de filtros); el orden no cuenta
+    public long activeFilterCount() {
+        return Stream.of(hasKeyword() ? q : null, department, locationId, categoryId, dateFrom, dateTo, minPrice, maxPrice)
+                .filter(Objects::nonNull)
+                .count();
     }
 }

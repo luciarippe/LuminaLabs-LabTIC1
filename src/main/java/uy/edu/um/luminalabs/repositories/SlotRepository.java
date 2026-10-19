@@ -1,6 +1,7 @@
 package uy.edu.um.luminalabs.repositories;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -29,16 +30,39 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
     @Query("select s from Slot s join fetch s.activity a join fetch a.business where s.id = :id")
     Optional<Slot> findByIdForUpdate(Long id);
 
-    List<Slot> findTop30ByActivityIdAndStatusAndStartTimeAfterOrderByStartTimeAsc(
+    // Detalle de la actividad: los proximos horarios para el calendario (alcanza para varios meses)
+    List<Slot> findTop100ByActivityIdAndStatusAndStartTimeAfterOrderByStartTimeAsc(
             Long activityId, SlotStatus status, LocalDateTime after);
 
-    // "Desde $X" y proxima fecha de cada actividad, en una sola consulta para todas las tarjetas
+    // "Desde $X", proxima fecha y ultima fecha de cada actividad, en una sola consulta para todas las tarjetas.
+    // La ultima fecha la usa el aviso al prestador de horarios por terminarse.
     @Query("""
-            select s.activity.id as activityId, min(s.price) as fromPrice, min(s.startTime) as nextStart
+            select s.activity.id as activityId, min(s.price) as fromPrice, min(s.startTime) as nextStart,
+                   max(s.startTime) as lastStart
             from Slot s
             where s.activity.id in :activityIds and s.status = :status and s.startTime > :after
             group by s.activity.id""")
     List<SlotSummary> summarize(Collection<Long> activityIds, SlotStatus status, LocalDateTime after);
+
+    // Espacio del prestador: proximos horarios activos de todas sus actividades, el mas cercano primero
+    @Query("""
+            select s from Slot s join fetch s.activity a join a.business b join b.providers p
+            where p.id = :providerId and s.status = :status and s.startTime > :after
+            order by s.startTime asc""")
+    List<Slot> findUpcomingForProvider(Long providerId, SlotStatus status, LocalDateTime after, Pageable pageable);
+
+    // Cantidad de proximos horarios activos y lugares ya reservados en ellos
+    @Query("""
+            select count(s) as slots, coalesce(sum(s.maxCapacity - s.availability), 0) as reservedSeats
+            from Slot s join s.activity a join a.business b join b.providers p
+            where p.id = :providerId and s.status = :status and s.startTime > :after""")
+    UpcomingTotals countUpcomingForProvider(Long providerId, SlotStatus status, LocalDateTime after);
+
+    interface UpcomingTotals {
+        long getSlots();
+
+        long getReservedSeats();
+    }
 
     interface SlotSummary {
         Long getActivityId();
@@ -46,5 +70,7 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
         BigDecimal getFromPrice();
 
         LocalDateTime getNextStart();
+
+        LocalDateTime getLastStart();
     }
 }

@@ -3,25 +3,26 @@
 <!-- CU-03: alta y modificacion de una actividad. "activity" es null en el alta. -->
 <head th:replace="~{fragments/layout :: head(${activity == null} ? 'Nueva actividad' : 'Editar actividad')}"></head>
 <body>
-<header th:replace="~{fragments/layout :: header(true)}"></header>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar(${activity == null} ? 'activity-new' : 'activities')}"></aside>
 
-<main class="container page">
+<main class="admin-main">
     <div class="breadcrumb">
-        <a th:href="@{/provider}">Mi espacio</a> /
+        <a th:href="@{/provider/activities}">Mis actividades</a> /
         <th:block th:if="${activity != null}">
             <a th:href="@{/provider/activities/{id}(id=${activity.id})}" th:text="${activity.name}">Actividad</a> /
         </th:block>
         <span th:text="${activity == null} ? 'Nueva actividad' : 'Editar'">Nueva actividad</span>
     </div>
-    <div class="page-header">
-        <span class="eyebrow">Espacio del prestador</span>
+    <div class="admin-topbar"><div>
+        <span class="admin-eyebrow">Actividades</span>
         <h1 th:text="${activity == null} ? 'Publicar una actividad' : 'Editar actividad'">Publicar una actividad</h1>
         <p th:if="${activity == null}">Al guardarla queda publicada en el portal. Después vas a cargar sus fechas, horarios y precios.</p>
-    </div>
+    </div></div>
 
     <div class="register-layout">
         <form th:action="${activity == null} ? @{/provider/activities/new} : @{/provider/activities/{id}/edit(id=${activity.id})}"
-              th:object="${form}" method="post" novalidate>
+              th:object="${form}" method="post" enctype="multipart/form-data" novalidate>
 
             <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
                 <div>
@@ -102,6 +103,50 @@
                         <span class="field-error" th:if="${#fields.hasErrors('minimumAge')}" th:errors="*{minimumAge}"></span>
                     </div>
                 </div>
+            </section>
+
+            <!-- Fotos: hasta Activity.MAX_PHOTOS. Al editar se pueden quitar, elegir la portada y agregar mas.
+                 app.js muestra las elegidas en miniatura y avisa si pasan el tamano o la cantidad. -->
+            <section class="form-section" data-photo-upload th:data-max-photos="${maxPhotos}" th:data-max-mb="${maxPhotoMb}"
+                     th:data-current-photos="${activity == null} ? 0 : ${activity.photos.size()}">
+                <div class="form-section__title">
+                    <span class="step-number step-number--icon"><svg th:replace="~{fragments/icons :: icon-sized('image', 'icon--sm')}"></svg></span>
+                    <h2>Fotos</h2>
+                </div>
+                <p class="form-section__intro" th:text="|Las fotos son lo primero que ven los turistas. La primera es la portada. Hasta ${maxPhotos} fotos JPG o PNG de hasta ${maxPhotoMb} MB cada una.|">Texto</p>
+
+                <div class="alert alert--error" role="alert" th:if="${#fields.hasGlobalErrors()}">
+                    <div th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error</div>
+                    <div class="small">Volvé a elegir las fotos nuevas: por seguridad, el navegador no las vuelve a mandar.</div>
+                </div>
+
+                <!-- Fotos que ya tiene (solo al editar) -->
+                <div class="photo-grid" th:if="${activity != null and !activity.photos.isEmpty()}">
+                    <div class="photo-tile" th:each="photo, iter : ${activity.photos}">
+                        <img th:src="@{/photos/{id}(id=${photo.imageId})}" th:alt="|Foto ${iter.count}|">
+                        <div class="photo-tile__actions">
+                            <label class="photo-tile__cover">
+                                <input type="radio" name="coverPhotoId" th:value="${photo.id}"
+                                       th:checked="${form.coverPhotoId != null ? form.coverPhotoId == photo.id : iter.first}">
+                                Portada
+                            </label>
+                            <label class="photo-tile__remove">
+                                <input type="checkbox" name="removePhotoIds" th:value="${photo.id}" data-photo-remove
+                                       th:checked="${form.removePhotoIds.contains(photo.id)}">
+                                Quitar
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <label class="photo-drop">
+                    <input type="file" name="photos" accept="image/jpeg,image/png" multiple data-photo-input>
+                    <svg th:replace="~{fragments/icons :: icon-sized('image', '')}"></svg>
+                    <strong th:text="${activity == null} ? 'Elegí las fotos de la actividad' : 'Agregar más fotos'">Elegí las fotos</strong>
+                    <span class="small">Podés elegir varias a la vez.</span>
+                </label>
+                <p class="photo-status" data-photo-status aria-live="polite"></p>
+                <div class="photo-grid photo-grid--new" data-photo-preview></div>
             </section>
 
             <!-- 3. Categorias (RF-08) -->
@@ -200,7 +245,6 @@
         </aside>
     </div>
 </main>
-
-<footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
 </body>
 </html>

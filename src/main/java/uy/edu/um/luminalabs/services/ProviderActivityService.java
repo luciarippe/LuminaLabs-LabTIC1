@@ -3,11 +3,13 @@ package uy.edu.um.luminalabs.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import uy.edu.um.luminalabs.dto.ActivityForm;
 import uy.edu.um.luminalabs.entities.Activity;
 import uy.edu.um.luminalabs.entities.ActivityCategory;
 import uy.edu.um.luminalabs.entities.Business;
 import uy.edu.um.luminalabs.entities.Location;
+import uy.edu.um.luminalabs.entities.StoredImage;
 import uy.edu.um.luminalabs.exceptions.ActivityNotFoundException;
 import uy.edu.um.luminalabs.exceptions.FieldValidationException;
 import uy.edu.um.luminalabs.repositories.ActivityCategoryRepository;
@@ -17,6 +19,7 @@ import uy.edu.um.luminalabs.repositories.LocationRepository;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,6 +38,7 @@ public class ProviderActivityService {
     private final LocationRepository locationRepository;
     private final ActivityCategoryRepository categoryRepository;
     private final Clock clock;
+    private final ImageProcessor imageProcessor;
 
     public List<Activity> findActivities(Long providerId) {
         return activityRepository.findByBusiness_Providers_IdOrderByNameAsc(providerId);
@@ -56,6 +60,12 @@ public class ProviderActivityService {
 
     @Transactional
     public Activity create(Long providerId, ActivityForm form) {
+        return create(providerId, form, List.of());
+    }
+
+    // "uploads": fotos nuevas. Se validan junto con el resto: si alguna no sirve no se guarda nada.
+    @Transactional
+    public Activity create(Long providerId, ActivityForm form, List<MultipartFile> uploads) {
         Map<String, String> errors = new LinkedHashMap<>();
         Business business = businessRepository.findWithDetailsById(form.getBusinessId())
                 .filter(found -> found.hasProvider(providerId) && found.isApproved())
@@ -66,16 +76,57 @@ public class ProviderActivityService {
         Activity activity = new Activity();
         activity.setBusiness(business);
         activity.setCreatedAt(LocalDateTime.now(clock));
+        List<StoredImage> newImages = processPhotos(activity, form, uploads, errors);
         apply(activity, form, errors);
+        newImages.forEach(activity::addPhoto);
         return activityRepository.save(activity);
     }
 
     @Transactional
     public Activity update(Long providerId, Long activityId, ActivityForm form) {
+        return update(providerId, activityId, form, List.of());
+    }
+
+    // Ademas de los datos: quita las fotos marcadas (form.removePhotoIds), agrega las nuevas y fija la portada
+    @Transactional
+    public Activity update(Long providerId, Long activityId, ActivityForm form, List<MultipartFile> uploads) {
         Activity activity = findOwnActivity(providerId, activityId);
         requireApprovedBusiness(activity);
-        apply(activity, form, new LinkedHashMap<>());
+        Map<String, String> errors = new LinkedHashMap<>();
+        List<StoredImage> newImages = processPhotos(activity, form, uploads, errors);
+        apply(activity, form, errors);
+        activity.removePhotos(form.getRemovePhotoIds());
+        newImages.forEach(activity::addPhoto);
+        if (form.getCoverPhotoId() != null) {
+            activity.makeCover(form.getCoverPhotoId());
+        }
         return activity;
+    }
+
+    // Procesa las fotos subidas (las vacias se ignoran) y controla el maximo por actividad. Los problemas van a
+    // "errors" con la clave "photos".
+    private List<StoredImage> processPhotos(Activity activity, ActivityForm form, List<MultipartFile> uploads,
+                                            Map<String, String> errors) {
+        List<MultipartFile> files = uploads == null ? List.of()
+                : uploads.stream().filter(file -> file != null && !file.isEmpty()).toList();
+        long kept = activity.getPhotos().stream()
+                .filter(photo -> !form.getRemovePhotoIds().contains(photo.getId()))
+                .count();
+        if (kept + files.size() > Activity.MAX_PHOTOS) {
+            errors.put("photos", "Una actividad puede tener hasta " + Activity.MAX_PHOTOS + " fotos"
+                    + (kept > 0 ? " (ya tiene " + kept + ")." : "."));
+            return List.of();
+        }
+        List<StoredImage> images = new ArrayList<>();
+        for (MultipartFile file : files) {
+            try {
+                images.add(imageProcessor.process(file));
+            } catch (IllegalArgumentException e) {
+                errors.put("photos", e.getMessage());
+                return List.of();
+            }
+        }
+        return images;
     }
 
     // Para precargar el formulario de edicion

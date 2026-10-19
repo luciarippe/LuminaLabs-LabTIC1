@@ -1,6 +1,7 @@
 package uy.edu.um.luminalabs.entities;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -87,6 +89,15 @@ public class Activity {
     @OrderBy("startTime ASC")
     private List<Slot> slots = new ArrayList<>();
 
+    // Galeria de fotos; la primera es la portada. BatchSize: en el catalogo se cargan las de varias actividades
+    // juntas en vez de una consulta por tarjeta.
+    @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    @BatchSize(size = 50)
+    private List<ActivityPhoto> photos = new ArrayList<>();
+
+    public static final int MAX_PHOTOS = 8;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -101,6 +112,45 @@ public class Activity {
     public Slot addSlot(Slot slot) {
         slots.add(slot);
         return slot;
+    }
+
+    // ---------- Fotos ----------
+
+    public void addPhoto(StoredImage image) {
+        if (photos.size() >= MAX_PHOTOS) {
+            throw new IllegalStateException("Una actividad puede tener hasta " + MAX_PHOTOS + " fotos.");
+        }
+        photos.add(new ActivityPhoto(this, image, photos.size()));
+    }
+
+    // Quita las fotos de la actividad con esos ids (las de otra actividad se ignoran) y reordena
+    public void removePhotos(Collection<Long> photoIds) {
+        photos.removeIf(photo -> photoIds.contains(photo.getId()));
+        renumberPhotos();
+    }
+
+    // La foto elegida pasa a ser la portada (primera); si no es de esta actividad no cambia nada
+    public void makeCover(Long photoId) {
+        photos.stream().filter(photo -> photo.getId() != null && photo.getId().equals(photoId)).findFirst()
+                .ifPresent(cover -> {
+                    photos.remove(cover);
+                    photos.addFirst(cover);
+                    renumberPhotos();
+                });
+    }
+
+    private void renumberPhotos() {
+        for (int i = 0; i < photos.size(); i++) {
+            photos.get(i).setPosition(i);
+        }
+    }
+
+    // Imagen de portada: la primera foto, o la de la localidad si la actividad no tiene; null si ninguna tiene
+    public Long getCoverImageId() {
+        if (!photos.isEmpty()) {
+            return photos.getFirst().getImageId();
+        }
+        return location == null ? null : location.getPhotoId();
     }
 
     // CU-01 3a: la edad se cuenta al dia de la actividad, no al dia en que se reserva

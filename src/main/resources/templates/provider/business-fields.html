@@ -47,7 +47,7 @@
             <div class="field">
                 <label for="business.identifier" id="identifier-label">RUT o cédula</label>
                 <input class="input" type="text" th:field="*{business.identifier}" th:errorclass="is-invalid" inputmode="numeric">
-                <span class="hint" id="identifier-hint">Solo números; podés incluir puntos o guiones.</span>
+                <span class="hint" id="identifier-hint">Solo números, sin espacios, puntos ni guiones.</span>
                 <span class="hint">¿Tu solicitud fue denegada? Usá el mismo RUT o cédula para volver a postularla con los datos corregidos.</span>
                 <span class="field-error" th:if="${#fields.hasErrors('business.identifier')}" th:errors="*{business.identifier}"></span>
             </div>
@@ -106,18 +106,36 @@
             <div class="field">
                 <label for="business.contactPhone">Teléfono de contacto</label>
                 <input class="input" type="tel" th:field="*{business.contactPhone}" th:errorclass="is-invalid" placeholder="099 123 456">
+                <span class="hint">Números, espacios, +, paréntesis o guiones.</span>
                 <span class="field-error" th:if="${#fields.hasErrors('business.contactPhone')}" th:errors="*{business.contactPhone}"></span>
             </div>
             <div class="field">
-                <label for="business.bankName">Banco</label>
-                <input class="input" type="text" th:field="*{business.bankName}" th:errorclass="is-invalid" placeholder="Ej.: BROU">
-                <span class="field-error" th:if="${#fields.hasErrors('business.bankName')}" th:errors="*{business.bankName}"></span>
+                <label for="business.bank">Banco o billetera</label>
+                <!-- Los data-* llevan el formato de cuenta de cada banco (Bank) para validarlo mientras se escribe -->
+                <select class="select" th:field="*{business.bank}" th:errorclass="is-invalid">
+                    <option value="">Elegí el banco o la billetera…</option>
+                    <optgroup th:each="wallets : ${ {false, true} }" th:label="${wallets} ? 'Billeteras digitales' : 'Bancos'">
+                        <option th:each="bank : ${banks}" th:if="${bank.wallet == wallets}"
+                                th:value="${bank}" th:text="${bank.label}"
+                                th:data-min="${bank.minDigits}" th:data-max="${bank.maxDigits}"
+                                th:data-first-digits="${bank.firstDigits}" th:data-hint="${bank.accountHint}">Banco</option>
+                    </optgroup>
+                </select>
+                <span class="field-error" th:if="${#fields.hasErrors('business.bank')}" th:errors="*{business.bank}"></span>
             </div>
             <div class="field">
                 <label for="business.bankAccountNumber">Número de cuenta</label>
-                <input class="input" type="text" th:field="*{business.bankAccountNumber}" th:errorclass="is-invalid">
+                <input class="input" type="text" th:field="*{business.bankAccountNumber}" th:errorclass="is-invalid" inputmode="numeric">
+                <span class="hint" id="account-hint">Elegí primero el banco o la billetera para ver cuántos dígitos tiene la cuenta.</span>
                 <span class="field-error" th:if="${#fields.hasErrors('business.bankAccountNumber')}" th:errors="*{business.bankAccountNumber}"></span>
             </div>
+        </div>
+
+        <!-- Redes sociales (opcionales): se muestran en el detalle de las actividades -->
+        <div class="form-subsection">
+            <h3>Redes sociales <span class="muted small">(opcional)</span></h3>
+            <p class="form-section__intro">Los turistas las ven en tus actividades para conocer más de tu emprendimiento.</p>
+            <th:block th:replace="~{fragments/social :: fields('business.social.')}"></th:block>
         </div>
     </section>
 

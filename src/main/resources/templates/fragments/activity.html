@@ -2,9 +2,13 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
 <body>
 
-<!-- Imagen de la actividad. Mientras no haya fotos, un paisaje con un degrade que depende del id. -->
-<div th:fragment="media(activity, label)" class="media" th:classappend="${'media--' + (activity.id % 6)}">
-    <svg th:replace="~{fragments/layout :: landscape('')}"></svg>
+<!-- Imagen de la actividad: su foto de portada, o la de su localidad si no tiene fotos (Activity.coverImageId).
+     Si ninguna tiene, un paisaje con un degrade que depende del id. -->
+<div th:fragment="media(activity, label)" class="media" th:classappend="${'media--' + (activity.id % 6)}"
+     th:with="imageId=${activity.coverImageId}">
+    <img class="media__photo" th:if="${imageId != null}" th:src="@{/photos/{id}(id=${imageId})}" th:alt="${activity.name}" loading="lazy">
+    <!-- th:if va en un bloque aparte: en el mismo elemento, th:replace se aplica antes que th:if -->
+    <th:block th:if="${imageId == null}"><svg th:replace="~{fragments/layout :: landscape('')}"></svg></th:block>
     <span class="media__label" th:if="${label != null}" th:text="${label}">Categoría</span>
 </div>
 

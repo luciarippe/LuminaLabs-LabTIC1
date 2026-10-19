@@ -17,16 +17,21 @@
 
     <div class="register-layout">
         <div>
-            <!-- Cambiar la cantidad de personas vuelve a cargar la pagina con otra cantidad de filas -->
+            <!-- Cantidad de personas: mientras se escribe, app.js avisa abajo si hay lugar y agrega o quita los
+                 participantes en el momento. Sin JavaScript, el boton recarga la pagina con la cantidad nueva. -->
             <form class="card quantity-bar" th:action="@{/reservations/new}" method="get">
                 <input type="hidden" name="slotId" th:value="${slot.id}">
                 <div class="field">
                     <label for="participants-count">¿Cuántas personas van?</label>
                     <input class="input" type="number" id="participants-count" name="participants"
-                           th:value="${participantCount}" min="1" th:max="${maxParticipants}">
-                    <span class="hint" th:text="|Quedan ${slot.availability} lugares para este horario.|">Quedan 12 lugares</span>
+                           th:value="${participantCount}" min="1" th:max="${maxParticipants}" inputmode="numeric"
+                           data-seat-check data-participant-count th:data-availability="${slot.availability}"
+                           th:data-max-per-reservation="${maxParticipantsPerReservation}"
+                           aria-describedby="participants-status">
+                    <span class="seat-status" id="participants-status" aria-live="polite"
+                          th:text="${slot.availability == 1} ? 'Queda 1 lugar en este horario.' : |Quedan ${slot.availability} lugares en este horario.|">Quedan 12 lugares</span>
                 </div>
-                <button type="submit" class="btn btn--ghost">Cambiar</button>
+                <noscript><button type="submit" class="btn btn--ghost">Cambiar</button></noscript>
             </form>
 
             <form th:action="@{/reservations}" th:object="${form}" method="post" novalidate>
@@ -36,7 +41,8 @@
                     <div><strong>Revisá los datos de los participantes.</strong></div>
                 </div>
 
-                <section class="form-section" th:each="participant, iter : *{participants}">
+                <div data-participants>
+                <section class="form-section" th:each="participant, iter : *{participants}" data-participant>
                     <div class="form-section__title">
                         <span class="step-number" th:text="${iter.count}">1</span>
                         <h2 th:text="${iter.first} ? 'Participante 1 (vos)' : |Participante ${iter.count}|">Participante</h2>
@@ -62,7 +68,32 @@
                         </div>
                     </div>
                 </section>
+                </div>
                 <span class="field-error" th:if="${#fields.hasErrors('participants')}" th:errors="*{participants}"></span>
+
+                <!-- Modelo de un participante para agregar con JavaScript: {i} es el indice (0, 1, ...) y {n} el numero que se muestra -->
+                <template id="participant-template">
+                    <section class="form-section" data-participant>
+                        <div class="form-section__title">
+                            <span class="step-number">{n}</span>
+                            <h2>Participante {n}</h2>
+                        </div>
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="participants{i}.firstName">Nombre</label>
+                                <input class="input" type="text" id="participants{i}.firstName" name="participants[{i}].firstName" maxlength="100">
+                            </div>
+                            <div class="field">
+                                <label for="participants{i}.lastName">Apellido</label>
+                                <input class="input" type="text" id="participants{i}.lastName" name="participants[{i}].lastName" maxlength="100">
+                            </div>
+                            <div class="field">
+                                <label for="participants{i}.birthDate">Fecha de nacimiento</label>
+                                <input class="input" type="date" id="participants{i}.birthDate" name="participants[{i}].birthDate">
+                            </div>
+                        </div>
+                    </section>
+                </template>
 
                 <div class="form-actions">
                     <a class="btn btn--ghost" th:href="@{/activities/{id}(id=${activity.id})}">Volver</a>
@@ -72,12 +103,12 @@
         </div>
 
         <aside class="register-aside">
-            <div class="card">
+            <div class="card" th:data-price="${slot.price}" data-reservation-summary>
                 <h3>Resumen</h3>
                 <dl class="summary-list">
                     <div><dt>Precio por persona</dt><dd th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</dd></div>
-                    <div><dt>Personas</dt><dd th:text="${participantCount}">1</dd></div>
-                    <div class="summary-list__total"><dt>Total</dt><dd th:text="|$ ${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</dd></div>
+                    <div><dt>Personas</dt><dd th:text="${participantCount}" data-summary-count>1</dd></div>
+                    <div class="summary-list__total"><dt>Total</dt><dd th:text="|$ ${#numbers.formatDecimal(total, 1, 'POINT', 0, 'COMMA')}|" data-summary-total>$ 1.500</dd></div>
                 </dl>
                 <p class="muted small" th:if="${activity.minimumAge != null}"
                    th:text="|Edad mínima: ${activity.minimumAge} años el día de la actividad.|">Edad mínima</p>

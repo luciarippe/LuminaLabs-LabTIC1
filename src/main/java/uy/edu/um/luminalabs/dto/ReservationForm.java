@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import uy.edu.um.luminalabs.entities.Slot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,11 @@ public class ReservationForm {
 
     // Maximo de personas en una misma reserva (ademas del limite de lugares del slot)
     public static final int MAX_PARTICIPANTS = 20;
+
+    // Cuantas personas se pueden elegir para un slot: sus lugares libres, sin pasar del maximo por reserva
+    public static int maxParticipantsFor(Slot slot) {
+        return Math.min(slot.getAvailability(), MAX_PARTICIPANTS);
+    }
 
     @NotNull
     private Long slotId;

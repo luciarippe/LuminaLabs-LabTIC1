@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import uy.edu.um.luminalabs.dto.ProviderRegistrationForm;
+import uy.edu.um.luminalabs.entities.Bank;
 import uy.edu.um.luminalabs.entities.Business;
 import uy.edu.um.luminalabs.entities.BusinessType;
 import uy.edu.um.luminalabs.entities.Department;
@@ -75,6 +76,11 @@ public class ProviderRegistrationController {
     @ModelAttribute("businessTypes")
     public BusinessType[] businessTypes() {
         return BusinessType.values();
+    }
+
+    @ModelAttribute("banks")
+    public Bank[] banks() {
+        return Bank.values();
     }
 
     @ModelAttribute("locationsByDepartment")

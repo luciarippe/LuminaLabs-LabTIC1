@@ -12,10 +12,18 @@ import java.time.LocalDate;
 @Setter
 public abstract class AccountForm {
 
+    // Letras (con tildes), espacios, apostrofo, punto o guion: "María José", "O'Neill", "Pérez-Ríos"
+    static final String NAME_PATTERN = "^[\\p{L}][\\p{L} '.-]*$";
+    static final String NAME_MESSAGE = "Solo puede tener letras, espacios, apóstrofos o guiones.";
+
     @NotBlank(message = "Ingresá tu nombre.")
+    @Size(max = 60, message = "Máximo 60 caracteres.")
+    @Pattern(regexp = NAME_PATTERN, message = NAME_MESSAGE)
     private String firstName;
 
     @NotBlank(message = "Ingresá tu apellido.")
+    @Size(max = 60, message = "Máximo 60 caracteres.")
+    @Pattern(regexp = NAME_PATTERN, message = NAME_MESSAGE)
     private String lastName;
 
     @NotNull(message = "Ingresá tu fecha de nacimiento.")

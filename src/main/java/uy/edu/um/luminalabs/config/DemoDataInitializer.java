@@ -149,8 +149,8 @@ public class DemoDataInitializer implements ApplicationRunner {
         business.setDescription(description);
         business.setContactEmail("contacto@" + identifier + ".demo");
         business.setContactPhone("099 000 000");
-        business.setBankName("Banco de demostración");
-        business.setBankAccountNumber("000000000");
+        business.setBank(Bank.BROU);
+        business.setBankAccountNumber("00000000000000");
         Arrays.stream(locationNames).map(locations::get).forEach(business.getLocations()::add);
         business.addProvider(provider);
         business.approve(LocalDateTime.now(clock));

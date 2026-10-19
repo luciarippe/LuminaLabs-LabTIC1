@@ -78,4 +78,8 @@ public class ActivityForm {
     @Min(value = 0, message = "Entre 0 y 100.")
     @Max(value = 100, message = "Entre 0 y 100.")
     private Integer cancellationFeePercentage;
+
+    // Fotos al editar: las que se quitan y la que pasa a ser portada (las nuevas llegan aparte, como archivos)
+    private List<Long> removePhotoIds = new ArrayList<>();
+    private Long coverPhotoId;
 }

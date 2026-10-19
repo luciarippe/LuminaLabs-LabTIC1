@@ -31,8 +31,24 @@
         </span>
     </div>
 
-    <div class="detail-media">
+    <!-- Galeria: la foto grande y miniaturas que la cambian al tocarlas (app.js). Sin fotos, la imagen de portada
+         (la de la localidad o un paisaje). -->
+    <div class="detail-media" th:if="${activity.photos.isEmpty()}">
         <div th:replace="~{fragments/activity :: media(${activity}, null)}"></div>
+    </div>
+    <div class="gallery" th:unless="${activity.photos.isEmpty()}" data-gallery>
+        <div class="gallery__main">
+            <img th:src="@{/photos/{id}(id=${activity.photos[0].imageId})}" th:alt="${activity.name}" data-gallery-main>
+            <span class="gallery__count" th:if="${activity.photos.size() > 1}"
+                  th:text="|${activity.photos.size()} fotos|">5 fotos</span>
+        </div>
+        <div class="gallery__thumbs" th:if="${activity.photos.size() > 1}">
+            <button type="button" class="gallery__thumb" th:each="photo, iter : ${activity.photos}"
+                    th:classappend="${iter.first} ? 'is-active'" th:data-src="@{/photos/{id}(id=${photo.imageId})}"
+                    th:aria-label="|Ver foto ${iter.count} de ${activity.photos.size()}|">
+                <img th:src="@{/photos/{id}(id=${photo.imageId})}" alt="" loading="lazy">
+            </button>
+        </div>
     </div>
 
     <div class="detail-layout">
@@ -100,6 +116,11 @@
                     <div>
                         <strong th:text="${activity.business.legalName}">Emprendimiento</strong>
                         <p class="muted small" style="margin: 2px 0 0" th:text="${activity.business.description}">Descripción</p>
+                        <!-- Redes del emprendimiento: abren en una pestana nueva -->
+                        <div class="organizer__social" th:if="${activity.business.hasSocialLinks()}">
+                            <span class="organizer__social-title">Conocé más en sus redes</span>
+                            <div th:replace="~{fragments/social :: links(${activity.business})}"></div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -115,19 +136,23 @@
 
             <!-- CU-01 paso 2: elegir horario y cantidad de personas. Es un GET a /reservations/new; si el visitante
                  no inicio sesion, Spring Security lo manda al login y despues lo devuelve ahi (CU-07 7b). -->
-            <form th:action="@{/reservations/new}" method="get" th:unless="${slots.isEmpty()}">
+            <form th:action="@{/reservations/new}" method="get" th:unless="${slots.isEmpty()}" novalidate>
                 <h3 style="font-size: 1rem">Elegí una fecha</h3>
-                <ul class="slot-list">
+                <!-- Calendario: lo arma app.js con la lista de abajo (data-date de cada horario). Al tocar un dia
+                     muestra solo los horarios de ese dia. Sin JavaScript se ve la lista completa, como antes. -->
+                <div class="slot-calendar" data-slot-calendar hidden></div>
+                <ul class="slot-list" data-slot-list>
                     <li th:each="slot, iter : ${slots}" th:with="bookable=${slot.isBookableAt(now)}"
-                        th:classappend="${bookable} ? 'is-selectable' : 'is-unavailable'">
+                        th:classappend="${bookable} ? 'is-selectable' : 'is-unavailable'"
+                        th:data-date="${#temporals.format(slot.startTime, 'yyyy-MM-dd')}" th:data-bookable="${bookable}">
                         <label class="slot-option">
                             <input type="radio" name="slotId" th:value="${slot.id}" th:disabled="${!bookable}" required
-                                   th:checked="${bookable and iter.first}">
+                                   th:checked="${bookable and iter.first}" th:data-availability="${slot.availability}">
                             <span>
+                                <span class="slot-list__time" th:text="${#temporals.format(slot.startTime, 'HH:mm')} + ' h'">17:30 h</span>
                                 <span class="slot-list__date" th:text="${#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM')}">sábado 12 de octubre</span>
-                                <span class="slot-list__sub"
-                                      th:text="${#temporals.format(slot.startTime, 'HH:mm') + ' · '
-                                                + (slot.soldOut ? 'Agotado' : (!bookable ? 'Reservas cerradas' : (slot.availability == 1 ? '1 lugar' : slot.availability + ' lugares')))}">17:30 · 12 lugares</span>
+                                <span class="slot-list__sub"><span class="slot-list__sub-time" th:text="${#temporals.format(slot.startTime, 'HH:mm')} + ' · '">17:30 · </span><span
+                                      th:text="${slot.soldOut ? 'Agotado' : (!bookable ? 'Reservas cerradas' : (slot.availability == 1 ? '1 lugar' : slot.availability + ' lugares'))}">12 lugares</span></span>
                             </span>
                         </label>
                         <span class="slot-list__price" th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.900</span>
@@ -135,9 +160,14 @@
                 </ul>
 
                 <th:block th:if="${currentUser == null or currentUser.tourist}">
+                    <!-- Mientras se escribe, app.js avisa abajo si hay lugar en el horario elegido (data-availability) -->
                     <div class="field booking-card__quantity">
                         <label for="participants">Personas</label>
-                        <input class="input" type="number" id="participants" name="participants" value="1" min="1" max="20" required>
+                        <input class="input" type="number" id="participants" name="participants" value="1" min="1"
+                               th:max="${maxParticipantsPerReservation}" required inputmode="numeric"
+                               data-seat-check th:data-max-per-reservation="${maxParticipantsPerReservation}"
+                               aria-describedby="participants-status">
+                        <span class="seat-status" id="participants-status" aria-live="polite"></span>
                     </div>
                     <button type="submit" class="btn btn--primary btn--lg btn--block"
                             th:text="${currentUser == null} ? 'Iniciá sesión para reservar' : 'Reservar'">Reservar</button>

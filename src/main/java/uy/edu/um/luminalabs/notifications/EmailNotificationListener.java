@@ -5,6 +5,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 import uy.edu.um.luminalabs.entities.CancellationReason;
+import uy.edu.um.luminalabs.events.AdminCreatedEvent;
 import uy.edu.um.luminalabs.events.BusinessRegisteredEvent;
 import uy.edu.um.luminalabs.events.BusinessStatusChangedEvent;
 import uy.edu.um.luminalabs.events.MailRecipient;
@@ -48,6 +49,20 @@ public class EmailNotificationListener {
                                 + event.username() + ".",
                         "Ya podés iniciar sesión para explorar experiencias en todo el país y reservar tus actividades."),
                 null, null,
+                "Iniciar sesión", emailSender.url("/login")));
+    }
+
+    @Async
+    @TransactionalEventListener
+    public void onAdminCreated(AdminCreatedEvent event) {
+        MailRecipient recipient = event.recipient();
+        emailSender.send(recipient, new EmailContent(
+                "Tu cuenta de administrador en Uruguay Mnatural",
+                "Se creó tu cuenta de administrador",
+                List.of("Hola " + recipient.firstName() + ", se creó tu cuenta de administrador en Uruguay Mnatural "
+                                + "con el usuario " + event.username() + ".",
+                        "Para ingresar usá la contraseña que figura abajo. No la compartas con nadie."),
+                "Contraseña", event.initialPassword(),
                 "Iniciar sesión", emailSender.url("/login")));
     }
 

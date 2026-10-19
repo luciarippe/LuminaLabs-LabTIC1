@@ -2,21 +2,22 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
 <head th:replace="~{fragments/layout :: head('Nuevo emprendimiento')}"></head>
 <body>
-<header th:replace="~{fragments/layout :: header(true)}"></header>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('business-new')}"></aside>
 
-<main class="container page">
+<main class="admin-main">
     <div class="breadcrumb">
-        <a th:href="@{/provider}">Mi espacio</a> / <span>Nuevo emprendimiento</span>
+        <a th:href="@{/provider/businesses}">Mis emprendimientos</a> / <span>Nuevo emprendimiento</span>
     </div>
-    <div class="page-header">
-        <span class="eyebrow">Espacio del prestador</span>
+    <div class="admin-topbar"><div>
+        <span class="admin-eyebrow">Emprendimientos</span>
         <h1>Registrar otro emprendimiento</h1>
         <p>Se asocia a tu cuenta y queda pendiente hasta que un administrador lo apruebe. Mientras tanto
             podés seguir gestionando tus otros emprendimientos.</p>
-    </div>
+    </div></div>
 
     <div class="register-layout">
-        <form th:action="@{/provider/businesses/new}" th:object="${form}" method="post" novalidate>
+        <form th:action="@{/provider/businesses/new}" th:object="${form}" method="post" novalidate data-validate>
 
             <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
                 <div>
@@ -30,7 +31,7 @@
             <th:block th:replace="~{provider/business-fields :: sections}"></th:block>
 
             <div class="form-actions">
-                <a class="btn btn--ghost" th:href="@{/provider}">Cancelar</a>
+                <a class="btn btn--ghost" th:href="@{/provider/businesses}">Cancelar</a>
                 <button type="submit" class="btn btn--primary btn--lg">Enviar solicitud</button>
             </div>
         </form>
@@ -45,7 +46,6 @@
         </aside>
     </div>
 </main>
-
-<footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
 </body>
 </html>

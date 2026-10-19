@@ -55,19 +55,20 @@ class ProviderRegistrationServiceTest {
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         service = new ProviderRegistrationService(userRepository, businessRepository, locationRepository,
-                passwordEncoder, new AccountValidator(userRepository), eventPublisher, clock);
+                passwordEncoder, new AccountValidator(userRepository), eventPublisher, clock,
+                new SocialLinksService(businessRepository));
 
         form = new ProviderRegistrationForm();
         BusinessForm business = form.getBusiness();
         business.setBusinessType(BusinessType.INDIVIDUAL);
         business.setLegalName("Cabalgatas del Este");
-        business.setIdentifier("1.234.567-8");
+        business.setIdentifier("12345678");
         business.setDescription("Cabalgatas por la sierra");
         business.setLocationIds(List.of(1L));
         business.setContactEmail("contacto@cabalgatas.uy");
         business.setContactPhone("099 123 456");
-        business.setBankName("BROU");
-        business.setBankAccountNumber("001234567");
+        business.setBank(Bank.BROU);
+        business.setBankAccountNumber("00123456700001");
         form.setFirstName("Ana");
         form.setLastName("Pérez");
         form.setBirthDate(LocalDate.of(1990, 5, 10));
@@ -144,6 +145,17 @@ class ProviderRegistrationServiceTest {
         FieldValidationException exception = assertThrows(FieldValidationException.class, () -> service.register(form));
 
         assertTrue(exception.getFieldErrors().containsKey("business.identifier"));
+    }
+
+    @Test
+    void rejectsAccountNumberWithWrongLengthForTheBank() {
+        form.getBusiness().setBank(Bank.ITAU);
+        when(locationRepository.findAllById(List.of(1L))).thenReturn(List.of(location));
+
+        FieldValidationException exception = assertThrows(FieldValidationException.class, () -> service.register(form));
+
+        assertEquals("En Itaú la cuenta tiene 7 dígitos (ingresaste 14).",
+                exception.getFieldErrors().get("business.bankAccountNumber"));
     }
 
     @Test

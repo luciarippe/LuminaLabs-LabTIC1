@@ -10,7 +10,7 @@
             <p class="muted">Explorar es libre; para reservar y dejar tu opinión necesitás una cuenta.
                 ¿Ofrecés experiencias? <a th:href="@{/register/provider}">Registrá tu emprendimiento</a>.</p>
 
-            <form th:action="@{/register}" th:object="${form}" method="post" novalidate>
+            <form th:action="@{/register}" th:object="${form}" method="post" novalidate data-validate>
                 <div class="alert alert--error" role="alert" th:if="${#fields.hasErrors('*')}">
                     <strong>Revisá los campos marcados.</strong>
                 </div>
@@ -34,6 +34,7 @@
                     <div class="field">
                         <label for="username">Nombre de usuario</label>
                         <input class="input" type="text" th:field="*{username}" th:errorclass="is-invalid" autocomplete="username">
+                        <span class="hint">De 3 a 30 caracteres: letras sin tilde, números, punto, guion o guion bajo.</span>
                         <span class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
                     </div>
                     <div class="field span-2">

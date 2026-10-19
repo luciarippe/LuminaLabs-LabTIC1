@@ -1,71 +1,202 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Panel del prestador: resumen de sus emprendimientos, actividades y proximos horarios -->
 <head th:replace="~{fragments/layout :: head('Mi espacio')}"></head>
 <body>
-<header th:replace="~{fragments/layout :: header(true)}"></header>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('dashboard')}"></aside>
 
-<main class="container page">
-    <div class="page-header page-header--actions">
-        <div>
-            <span class="eyebrow">Espacio del prestador</span>
-            <h1 th:text="|¡Hola, ${currentUser.displayName}!|">¡Hola!</h1>
-            <p>Desde acá gestionás tus emprendimientos, sus actividades y sus fechas.</p>
-        </div>
-        <a class="btn btn--ghost" th:href="@{/provider/businesses/new}">Registrar otro emprendimiento</a>
-    </div>
-
-    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
-
-    <!-- Un bloque por emprendimiento, con sus actividades (CU-03) -->
-    <section class="card provider-business" th:each="business : ${businesses}"
-             th:with="activities=${activitiesByBusiness.get(business.id)}">
-        <div class="business-card__top">
+    <main class="admin-main">
+        <div class="admin-topbar">
             <div>
-                <h2 th:text="${business.legalName}">Emprendimiento</h2>
-                <span class="business-card__meta"
-                      th:text="|${business.type.label} · ${business.type.identifierLabel} ${business.identifier}|">Empresa · RUT</span>
+                <span class="admin-eyebrow" th:text="${#temporals.format(#temporals.createNow(), 'EEEE d ''de'' MMMM')}">Lunes 19 de octubre</span>
+                <h1 th:text="|Hola, ${currentUser.displayName}|">Hola</h1>
+                <p>Desde acá gestionás tus emprendimientos, sus actividades y sus fechas.</p>
             </div>
-            <div class="provider-business__actions">
-                <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
-                      th:text="${business.status.label}">Aprobado</span>
-                <a class="btn btn--primary btn--sm" th:if="${business.approved}"
-                   th:href="@{/provider/activities/new(businessId=${business.id})}">Nueva actividad</a>
+            <a class="btn btn--primary" th:if="${approvedCount > 0}" th:href="@{/provider/activities/new}">
+                <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg> Nueva actividad
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="alert alert--info" role="status" th:if="${approvedCount == 0 and pendingCount > 0}">
+            <div><strong>Tu solicitud está en revisión.</strong> Cuando un administrador apruebe tu emprendimiento
+                vas a poder publicar actividades. Te avisamos por correo.</div>
+        </div>
+
+        <!-- Aviso: actividades sin horarios proximos o con el ultimo dentro de menos de runningOutDays dias -->
+        <section class="runout-panel" th:unless="${runningOut.isEmpty()}">
+            <div class="runout-panel__head">
+                <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('alert', '')}"></svg></span>
+                <div>
+                    <h2 th:text="${runningOut.size() == 1} ? 'A 1 actividad se le terminan los horarios' : |A ${runningOut.size()} actividades se les terminan los horarios|">Horarios por terminarse</h2>
+                    <p th:text="|Cuando se acaban las fechas, los turistas ya no pueden reservar. Cargá más horarios con tiempo: te avisamos cuando quedan menos de ${runningOutDays} días.|">Texto</p>
+                </div>
             </div>
+            <ul class="runout-list">
+                <li th:each="item : ${runningOut}">
+                    <div class="runout-list__main">
+                        <strong th:text="${item.activity().name}">Actividad</strong>
+                        <span class="small" th:text="${item.activity().business.legalName}">Emprendimiento</span>
+                    </div>
+                    <span class="runout-list__when" th:classappend="${item.hasNoSlots() or item.daysLeft() <= 7} ? 'is-urgent'"
+                          th:text="${item.hasNoSlots()} ? 'Sin horarios próximos'
+                                  : (${item.daysLeft() == 0} ? |Último horario: hoy, ${#temporals.format(item.lastStart(), 'HH:mm')} h|
+                                  : (${item.daysLeft() == 1} ? 'Último horario: mañana'
+                                  : |Último horario en ${item.daysLeft()} días (${#temporals.format(item.lastStart(), 'dd/MM')})|))">Último horario en 12 días</span>
+                    <a class="btn btn--sm btn--primary" th:href="@{/provider/activities/{id}(id=${item.activity().id})}">Cargar horarios</a>
+                </li>
+            </ul>
+        </section>
+
+        <div class="kpi-grid">
+            <a class="kpi" th:href="@{/provider/businesses}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Emprendimientos aprobados</span>
+                    <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('building', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${approvedCount}">0</span>
+                <span class="kpi__link">
+                    <span th:text="${businesses.size() == 1} ? 'De 1 registrado' : |De ${businesses.size()} registrados|">De 1</span>
+                    <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg>
+                </span>
+            </a>
+            <a class="kpi" th:href="@{/provider/activities}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Actividades publicadas</span>
+                    <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${activityCount}">0</span>
+                <span class="kpi__link">Ver actividades <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
+            </a>
+            <a class="kpi" th:href="@{/provider/activities}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Próximos horarios</span>
+                    <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${upcomingTotals.slots}">0</span>
+                <span class="kpi__link">Con lugares a la venta <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
+            </a>
+            <a class="kpi" th:href="@{/provider/activities}">
+                <span class="kpi__top">
+                    <span class="kpi__label">Lugares reservados</span>
+                    <span class="icon-chip icon-chip--slate"><svg th:replace="~{fragments/icons :: icon-sized('users', '')}"></svg></span>
+                </span>
+                <span class="kpi__value" th:text="${upcomingTotals.reservedSeats}">0</span>
+                <span class="kpi__link">En los próximos horarios <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
+            </a>
         </div>
 
-        <div class="reason-box" th:if="${business.statusReason}">
-            <strong>Motivo:</strong> <span th:text="${business.statusReason}"></span>
-        </div>
-        <p class="muted small" th:if="${business.status.name() == 'PENDING'}">
-            Tu solicitud está en revisión. Cuando sea aprobada vas a poder publicar actividades.</p>
-        <p class="muted small" th:if="${business.status.name() == 'SUSPENDED'}">
-            Mientras esté suspendido, sus actividades no se muestran en el portal y no se pueden modificar.</p>
-        <p class="muted small" th:if="${business.status.name() == 'DENIED'}">
-            Podés <a th:href="@{/provider/businesses/new}">volver a postularlo</a> con los datos corregidos usando el mismo identificador.</p>
+        <div class="admin-columns">
+            <div>
+                <section class="panel">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2>Próximos horarios</h2>
+                            <p>Las próximas fechas de todas tus actividades.</p>
+                        </div>
+                    </div>
+                    <div class="empty-state" th:if="${upcomingSlots.isEmpty()}">
+                        <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
+                        <h3>Sin fechas próximas</h3>
+                        <p th:text="${activityCount > 0} ? 'Agregá horarios a tus actividades para que los turistas puedan reservar.' : 'Publicá tu primera actividad y cargale fechas y horarios.'">Sin fechas</p>
+                        <a class="btn btn--sm" th:href="${activityCount > 0} ? @{/provider/activities} : @{/provider/activities/new}"
+                           th:if="${approvedCount > 0}" th:text="${activityCount > 0} ? 'Ir a mis actividades' : 'Publicar actividad'">Ir</a>
+                    </div>
+                    <div class="table-wrap" th:unless="${upcomingSlots.isEmpty()}">
+                        <table class="table">
+                            <thead><tr><th>Fecha</th><th>Actividad</th><th>Lugares</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+                            <tbody>
+                            <tr th:each="slot : ${upcomingSlots}">
+                                <td>
+                                    <span class="cell-title nowrap" th:text="${#temporals.format(slot.startTime, 'EEE dd/MM')}">sáb 01/11</span>
+                                    <span class="cell-sub" th:text="${#temporals.format(slot.startTime, 'HH:mm')} + ' h'">10:00 h</span>
+                                </td>
+                                <td>
+                                    <span class="cell-title" th:text="${slot.activity.name}">Actividad</span>
+                                    <span class="cell-sub" th:text="${slot.activity.business.legalName}">Emprendimiento</span>
+                                </td>
+                                <td>
+                                    <span class="nowrap" th:text="|${slot.reservedSeats} de ${slot.maxCapacity} reservados|">0 de 12</span>
+                                    <span class="badge badge--pending" th:if="${slot.soldOut}">Completo</span>
+                                </td>
+                                <td class="cell-actions">
+                                    <a class="btn btn--sm" th:href="@{/provider/activities/{id}(id=${slot.activity.id})}">Gestionar</a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
-        <div class="table-wrap" th:if="${activities != null}">
-            <table class="table">
-                <thead><tr><th>Actividad</th><th>Localidad</th><th>Duración</th><th></th></tr></thead>
-                <tbody>
-                <tr th:each="activity : ${activities}">
-                    <td>
-                        <span class="cell-title" th:text="${activity.name}">Nombre</span>
-                        <span class="cell-sub" th:text="${#strings.listJoin(activity.categories.![name], ' · ')}">Categorías</span>
-                    </td>
-                    <td th:text="|${activity.location.name}, ${activity.location.department.label}|">Localidad</td>
-                    <td th:text="${activity.durationLabel}">2 h</td>
-                    <td class="cell-actions">
-                        <a class="btn btn--ghost btn--sm" th:href="@{/provider/activities/{id}(id=${activity.id})}">Fechas y detalle</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="muted small" th:if="${activities == null and business.approved}">
-            Todavía no publicaste actividades en este emprendimiento.</p>
-    </section>
-</main>
+                <section class="panel">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('building', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2>Mis emprendimientos</h2>
+                            <p>El estado de cada uno y cuántas actividades tiene.</p>
+                        </div>
+                        <a class="btn btn--sm" th:href="@{/provider/businesses}">Ver todos</a>
+                    </div>
+                    <ul class="person-list">
+                        <li th:each="business : ${businesses}">
+                            <span class="initials" th:classappend="${@view.avatarColor(business.id)}"
+                                  th:text="${@view.initials(business.legalName)}">CE</span>
+                            <div class="person-list__main">
+                                <strong th:text="${business.legalName}">Emprendimiento</strong>
+                                <span class="small">
+                                    <span th:text="|${business.type.identifierLabel} ${business.identifier}|">RUT</span>
+                                    <span th:with="count=${activityCountByBusiness.getOrDefault(business.id, 0L)}"
+                                          th:text="${count == 1} ? '1 actividad' : |${count} actividades|">0 actividades</span>
+                                </span>
+                            </div>
+                            <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
+                                  th:text="${business.status.label}">Aprobado</span>
+                        </li>
+                    </ul>
+                </section>
+            </div>
 
-<footer th:replace="~{fragments/layout :: footer}"></footer>
+            <section class="panel">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></span>
+                    <div class="panel__title"><h2>Accesos rápidos</h2></div>
+                </div>
+                <ul class="quick-links">
+                    <li th:if="${approvedCount > 0}">
+                        <a th:href="@{/provider/activities/new}">
+                            <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg></span>
+                            <span><strong>Publicar una actividad</strong><span class="small">Después le cargás fechas y precios.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/provider/businesses/new}">
+                            <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('file-text', 'icon--sm')}"></svg></span>
+                            <span><strong>Registrar emprendimiento</strong><span class="small">Otro emprendimiento con tu misma cuenta.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/provider/account}">
+                            <span class="icon-chip icon-chip--slate"><svg th:replace="~{fragments/icons :: icon-sized('key', 'icon--sm')}"></svg></span>
+                            <span><strong>Mi cuenta</strong><span class="small">Tus datos y tu contraseña.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/}">
+                            <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('external', 'icon--sm')}"></svg></span>
+                            <span><strong>Ver portal público</strong><span class="small">Cómo ven tus actividades los turistas.</span></span>
+                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </main>
+</div>
 </body>
 </html>

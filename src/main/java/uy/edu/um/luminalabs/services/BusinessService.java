@@ -17,6 +17,7 @@ import uy.edu.um.luminalabs.repositories.ReservationRepository;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -54,6 +55,32 @@ public class BusinessService {
         return status == null
                 ? businessRepository.findAllByOrderByCreatedAtDesc()
                 : businessRepository.findByStatusOrderByCreatedAtAsc(status);
+    }
+
+    // Busca por parte del nombre o del RUT/cedula, en todos los estados (el listado cuenta los resultados por estado).
+    // El identificador se compara solo con los digitos del texto, asi "21.123" encuentra "211234560019".
+    public List<Business> search(String query) {
+        String text = query.trim();
+        String digits = ProviderRegistrationService.normalizeIdentifier(text);
+        return businessRepository.search(escapeLike(text), digits);
+    }
+
+    // Secciones "Rechazados" y "Suspendidos" del administrador: el cambio de estado mas reciente primero,
+    // opcionalmente filtrados por nombre o RUT/cedula (misma busqueda que el listado general).
+    // Un denegado que se vuelve a postular (CU-02 5c) o un suspendido que se reactiva sale de su lista.
+    public List<Business> findByStatusLatestFirst(BusinessStatus status, String query) {
+        if (query.isBlank()) {
+            return businessRepository.findByStatusOrderByReviewedAtDesc(status);
+        }
+        return search(query).stream()
+                .filter(business -> business.getStatus() == status)
+                .sorted(Comparator.comparing(Business::getReviewedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    // % y _ son comodines en LIKE: se escapan para que se busquen como texto
+    private static String escapeLike(String text) {
+        return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     public List<Business> findByProvider(Long providerId) {

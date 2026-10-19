@@ -52,7 +52,7 @@ class ProviderActivityServiceTest {
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         service = new ProviderActivityService(activityRepository, businessRepository, locationRepository,
-                categoryRepository, clock);
+                categoryRepository, clock, new ImageProcessor(clock));
 
         Provider provider = new Provider();
         provider.setId(PROVIDER_ID);

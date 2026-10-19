@@ -9,7 +9,8 @@
     </div>
     <div class="field">
         <label for="date">Fecha</label>
-        <input class="input" type="date" th:field="*{date}" th:errorclass="is-invalid">
+        <input class="input" type="date" th:field="*{date}" th:errorclass="is-invalid"
+               th:min="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}" th:max="${lastSlotDate}">
         <span class="field-error" th:if="${#fields.hasErrors('date')}" th:errors="*{date}"></span>
     </div>
     <div class="field">
@@ -26,6 +27,40 @@
         <label for="maxCapacity">Capacidad máxima (personas)</label>
         <input class="input" type="number" th:field="*{maxCapacity}" th:errorclass="is-invalid" min="1">
         <span class="field-error" th:if="${#fields.hasErrors('maxCapacity')}" th:errors="*{maxCapacity}"></span>
+    </div>
+</th:block>
+
+<!-- Repeticion del horario: solo en "Agregar horario". app.js muestra "Hasta" y los dias segun la opcion elegida
+     y calcula cuantos horarios se van a crear (sin JavaScript se ven todos los campos). -->
+<th:block th:fragment="repetition">
+    <div class="slot-repeat" data-slot-repeat th:data-max-slots="${maxSlotsPerRepetition}">
+        <div class="field">
+            <label for="repetition">Repetir</label>
+            <select class="select" th:field="*{repetition}" data-repeat-select>
+                <option th:each="option : ${repetitions}" th:value="${option}" th:text="${option.label}">No se repite</option>
+            </select>
+        </div>
+
+        <div class="field" data-repeat-weekdays>
+            <span class="label">Días</span>
+            <div class="weekday-picker">
+                <label class="weekday-chip" th:each="option : ${weekdayOptions}">
+                    <input type="checkbox" th:field="*{weekdays}" th:value="${option.day}">
+                    <span th:text="${option.label}">lun</span>
+                </label>
+            </div>
+            <span class="field-error" th:if="${#fields.hasErrors('weekdays')}" th:errors="*{weekdays}"></span>
+        </div>
+
+        <div class="field" data-repeat-until>
+            <label for="repeatUntil">Hasta</label>
+            <input class="input" type="date" th:field="*{repeatUntil}" th:errorclass="is-invalid" th:max="${lastSlotDate}"
+                   th:data-suggested-months="${suggestedRepeatMonths}">
+            <span class="hint" th:text="|Se pueden cargar horarios hasta el ${#temporals.format(lastSlotDate, 'dd/MM/yyyy')} (${maxMonthsAhead} meses).|">Hasta 6 meses</span>
+            <span class="field-error" th:if="${#fields.hasErrors('repeatUntil')}" th:errors="*{repeatUntil}"></span>
+        </div>
+
+        <p class="slot-repeat__preview" data-repeat-preview aria-live="polite"></p>
     </div>
 </th:block>
 </body>

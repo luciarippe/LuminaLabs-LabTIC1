@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import uy.edu.um.luminalabs.dto.ActivitySearchCriteria;
 import uy.edu.um.luminalabs.entities.Department;
 import uy.edu.um.luminalabs.services.ActivityCatalogService;
+import uy.edu.um.luminalabs.services.LocationService;
 
 // Portada: el catalogo de actividades, visible sin iniciar sesion (RF-12)
 @Controller
@@ -16,6 +17,7 @@ public class HomeController {
     private static final int FEATURED_LIMIT = 8;
 
     private final ActivityCatalogService catalogService;
+    private final LocationService locationService;
 
     @GetMapping("/")
     public String home(Model model) {
@@ -24,6 +26,8 @@ public class HomeController {
         model.addAttribute("featured", catalogService.search(criteria).stream().limit(FEATURED_LIMIT).toList());
         model.addAttribute("categories", catalogService.findCategories());
         model.addAttribute("destinations", catalogService.findDestinations());
+        // Foto de cada departamento (de sus localidades) para las tarjetas de destinos
+        model.addAttribute("departmentPhotos", locationService.findPhotoByDepartment());
         model.addAttribute("departments", Department.values());
         return "index";
     }

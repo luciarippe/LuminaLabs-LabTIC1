@@ -8,26 +8,48 @@
     <main class="admin-main">
         <div class="admin-topbar">
             <div>
-                <h1>Emprendimientos</h1>
-                <p>Revisá las solicitudes y gestioná el estado de cada emprendimiento.</p>
+                <span class="admin-eyebrow">Emprendimientos</span>
+                <h1 th:text="${selectedStatus != null and selectedStatus.name() == 'PENDING'} ? 'Solicitudes' : 'Todos los emprendimientos'">Emprendimientos</h1>
+                <p>Revisá las solicitudes y gestioná el estado de cada emprendimiento de la plataforma.</p>
             </div>
         </div>
 
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
-        <nav class="tabs" aria-label="Filtrar por estado">
-            <a class="tab" th:href="@{/admin/businesses}" th:classappend="${selectedStatus == null} ? 'is-active'">
-                Todos <span class="tab__count" th:text="${statusCounts.total()}">0</span>
-            </a>
-            <a class="tab" th:each="status : ${statuses}"
-               th:href="@{/admin/businesses(status=${status})}"
-               th:classappend="${selectedStatus == status} ? 'is-active'">
-                <span th:text="${status.label}">Estado</span>
-                <span class="tab__count" th:text="${statusCounts.of(status)}">0</span>
-            </a>
-        </nav>
+        <section class="panel">
+            <div class="admin-toolbar">
+                <!-- Busqueda por nombre o RUT/cedula; se combina con la pestana de estado elegida -->
+                <form class="admin-search" th:action="@{/admin/businesses}" method="get" role="search">
+                    <input type="hidden" name="status" th:if="${selectedStatus != null}" th:value="${selectedStatus}">
+                    <label class="visually-hidden" for="business-search">Buscar emprendimiento</label>
+                    <div class="admin-search__field">
+                        <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg>
+                        <input class="input" type="search" id="business-search" name="q" th:value="${query}"
+                               placeholder="Buscar por nombre o RUT/cédula…" maxlength="150">
+                    </div>
+                    <button type="submit" class="btn btn--primary">Buscar</button>
+                    <a class="btn btn--ghost" th:if="${!query.isEmpty()}"
+                       th:href="@{/admin/businesses(status=${selectedStatus})}">Volver al listado</a>
+                </form>
 
-        <section class="card card--flush">
+                <nav class="tabs" aria-label="Filtrar por estado">
+                    <a class="tab" th:href="@{/admin/businesses(q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${selectedStatus == null} ? 'is-active'">
+                        Todos <span class="tab__count" th:text="${tabCounts.total()}">0</span>
+                    </a>
+                    <a class="tab" th:each="status : ${statuses}"
+                       th:href="@{/admin/businesses(status=${status}, q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${selectedStatus == status} ? 'is-active'">
+                        <span th:text="${status.label}">Estado</span>
+                        <span class="tab__count" th:text="${tabCounts.of(status)}">0</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="admin-results" th:unless="${query.isEmpty()}">
+                <span th:text="${businesses.size() == 1} ? |1 resultado para «${query}»| : |${businesses.size()} resultados para «${query}»|">Resultados</span>
+            </div>
+
             <!-- Fragmento reutilizado en el panel principal -->
             <div class="table-wrap" th:fragment="businessTable(businesses)" th:unless="${businesses.isEmpty()}">
                 <table class="table">
@@ -35,8 +57,8 @@
                     <tr>
                         <th>Emprendimiento</th>
                         <th>Identificador</th>
-                        <th>Localidades</th>
-                        <th>Fecha de solicitud</th>
+                        <th class="col-locations">Localidades</th>
+                        <th>Solicitud</th>
                         <th>Estado</th>
                         <th><span class="visually-hidden">Acciones</span></th>
                     </tr>
@@ -44,22 +66,31 @@
                     <tbody>
                     <tr th:each="business : ${businesses}">
                         <td>
-                            <span class="cell-title" th:text="${business.legalName}">Nombre</span>
-                            <span class="cell-sub" th:text="${business.type.label}">Empresa</span>
+                            <div class="entity">
+                                <span class="initials" th:classappend="${@view.avatarColor(business.id)}"
+                                      th:text="${@view.initials(business.legalName)}">CE</span>
+                                <div class="entity__text">
+                                    <span class="cell-title" th:text="${business.legalName}">Nombre</span>
+                                    <span class="cell-sub" th:text="${business.type.label}">Empresa</span>
+                                </div>
+                            </div>
                         </td>
                         <td>
                             <span th:text="${business.identifier}">123</span>
                             <span class="cell-sub" th:text="${business.type.identifierLabel}">RUT</span>
                         </td>
-                        <td>
+                        <td class="col-locations">
                             <div class="chip-list">
-                                <span class="chip" th:each="location, iter : ${business.locations}" th:if="${iter.index < 2}"
+                                <span class="chip" th:each="location, iter : ${business.locations}" th:if="${iter.index < 1}"
                                       th:text="${location.name}">Localidad</span>
-                                <span class="chip" th:if="${business.locations.size() > 2}"
-                                      th:text="|+${business.locations.size() - 2}|">+1</span>
+                                <span class="chip" th:if="${business.locations.size() > 1}"
+                                      th:text="|+${business.locations.size() - 1}|">+1</span>
                             </div>
                         </td>
-                        <td th:text="${#temporals.format(business.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</td>
+                        <td>
+                            <span th:text="${#temporals.format(business.createdAt, 'dd/MM/yyyy')}">01/01/2026</span>
+                            <span class="cell-sub" th:text="${#temporals.format(business.createdAt, 'HH:mm')}">10:00</span>
+                        </td>
                         <td>
                             <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
                                   th:text="${business.status.label}">Pendiente</span>
@@ -76,7 +107,11 @@
             <div class="empty-state" th:if="${businesses.isEmpty()}">
                 <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('search', '')}"></svg></div>
                 <h3>No hay emprendimientos</h3>
-                <p>No hay emprendimientos con este estado.</p>
+                <p th:if="${query.isEmpty()}">No hay emprendimientos con este estado.</p>
+                <p th:unless="${query.isEmpty()}"
+                   th:text="|Ningún emprendimiento${selectedStatus != null ? ' ' + #strings.toLowerCase(selectedStatus.label) : ''} coincide con «${query}». Probá con otra parte del nombre o del RUT/cédula.|">Sin resultados</p>
+                <a class="btn btn--sm" th:unless="${query.isEmpty()}"
+                   th:href="@{/admin/businesses(status=${selectedStatus})}">Volver al listado</a>
             </div>
         </section>
     </main>

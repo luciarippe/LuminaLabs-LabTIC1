@@ -3,19 +3,20 @@
 <!-- CU-04 5a: modificar un slot -->
 <head th:replace="~{fragments/layout :: head('Modificar horario')}"></head>
 <body>
-<header th:replace="~{fragments/layout :: header(true)}"></header>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('activities')}"></aside>
 
-<main class="container page" th:with="activity=${slot.activity}">
+<main class="admin-main" th:with="activity=${slot.activity}">
     <div class="breadcrumb">
-        <a th:href="@{/provider}">Mi espacio</a> /
+        <a th:href="@{/provider/activities}">Mis actividades</a> /
         <a th:href="@{/provider/activities/{id}(id=${activity.id})}" th:text="${activity.name}">Actividad</a> /
         <span>Modificar horario</span>
     </div>
-    <div class="page-header">
-        <span class="eyebrow" th:text="${activity.name}">Actividad</span>
+    <div class="admin-topbar"><div>
+        <span class="admin-eyebrow" th:text="${activity.name}">Actividad</span>
         <h1>Modificar horario</h1>
         <p th:text="|Horario actual: ${#temporals.format(slot.startTime, 'EEEE dd/MM/yyyy HH:mm')} h|">Horario actual</p>
-    </div>
+    </div></div>
 
     <div class="register-layout">
         <form class="card form-stack" th:action="@{/provider/activities/{id}/slots/{slotId}/edit(id=${activity.id}, slotId=${slot.id})}"
@@ -39,7 +40,6 @@
         </aside>
     </div>
 </main>
-
-<footer th:replace="~{fragments/layout :: footer}"></footer>
+</div>
 </body>
 </html>

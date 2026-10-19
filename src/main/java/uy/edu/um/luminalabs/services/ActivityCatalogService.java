@@ -73,7 +73,7 @@ public class ActivityCatalogService {
 
     // CU-07 paso 7: proximos slots activos con su precio y disponibilidad
     public List<Slot> findUpcomingSlots(Long activityId) {
-        return slotRepository.findTop30ByActivityIdAndStatusAndStartTimeAfterOrderByStartTimeAsc(
+        return slotRepository.findTop100ByActivityIdAndStatusAndStartTimeAfterOrderByStartTimeAsc(
                 activityId, SlotStatus.ACTIVE, LocalDateTime.now(clock));
     }
 

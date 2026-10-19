@@ -36,8 +36,9 @@ public class Business {
     @Column(name = "identifier", nullable = false, unique = true)
     private String identifier;
 
-    @Column(name = "bank_name", nullable = false)
-    private String bankName;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "bank", nullable = false)
+    private Bank bank;
 
     @Column(name = "bank_account_number", nullable = false)
     private String bankAccountNumber;
@@ -50,6 +51,23 @@ public class Business {
 
     @Column(name = "contact_phone", nullable = false)
     private String contactPhone;
+
+    // Redes sociales (opcionales), como direcciones completas armadas por SocialNetwork.toUrl
+    @Column(name = "website_url")
+    private String websiteUrl;
+
+    @Column(name = "instagram_url")
+    private String instagramUrl;
+
+    @Column(name = "facebook_url")
+    private String facebookUrl;
+
+    @Column(name = "tiktok_url")
+    private String tiktokUrl;
+
+    public boolean hasSocialLinks() {
+        return websiteUrl != null || instagramUrl != null || facebookUrl != null || tiktokUrl != null;
+    }
 
     @Setter(AccessLevel.NONE)
     @Enumerated(EnumType.STRING)

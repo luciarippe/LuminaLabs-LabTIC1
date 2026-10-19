@@ -7,12 +7,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title} + ' · Uruguay Mnatural'">Uruguay Mnatural</title>
-    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo.svg}">
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <!-- Inter para el texto; Fraunces solo para el nombre "Uruguay Mnatural" (.brand) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/form-validation.js}" defer></script>
 </head>
 
 <body>
@@ -20,7 +22,6 @@
 <header th:fragment="header(showSearch)" class="site-header">
     <div class="container site-header__inner">
         <a class="brand" th:href="@{/}">
-            <img th:src="@{/images/logo.svg}" alt="">
             <span>Uruguay <strong>Mnatural</strong></span>
         </a>
 
@@ -39,18 +40,57 @@
                 </a>
                 <a class="btn btn--dark btn--sm" th:href="@{/register}">Crear cuenta</a>
             </th:block>
-            <th:block th:if="${currentUser != null}">
-                <a th:if="${currentUser.admin}" th:href="@{/admin}">Administración</a>
-                <a th:if="${currentUser.provider}" th:href="@{/provider}">Mi espacio</a>
-                <a th:if="${currentUser.tourist}" th:href="@{/reservations}">Mis reservas</a>
-                <span class="user-chip">
+            <!-- Menu de la cuenta: se abre al pasar el mouse, con clic (celulares) o con el teclado (ver app.js) -->
+            <div class="user-menu" th:if="${currentUser != null}" data-user-menu>
+                <button type="button" class="user-menu__trigger" aria-haspopup="true" aria-expanded="false"
+                        aria-controls="user-menu-panel">
                     <span class="avatar" th:text="${#strings.substring(currentUser.displayName, 0, 1)}">A</span>
-                    <span th:text="${currentUser.displayName}">Nombre</span>
-                </span>
-                <form class="inline-form" th:action="@{/logout}" method="post">
-                    <button type="submit" class="btn btn--ghost btn--sm">Salir</button>
-                </form>
-            </th:block>
+                    <span class="user-menu__name" th:text="${currentUser.displayName}">Nombre</span>
+                    <svg class="user-menu__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="user-menu__panel" id="user-menu-panel" role="menu">
+                    <div class="user-menu__header">
+                        <span class="avatar avatar--lg" th:text="${#strings.substring(currentUser.displayName, 0, 1)}">A</span>
+                        <span>
+                            <strong th:text="${currentUser.displayName}">Nombre</strong>
+                            <span th:text="${currentUser.admin} ? 'Administrador' : (${currentUser.provider} ? 'Prestador' : 'Turista')">Turista</span>
+                        </span>
+                    </div>
+                    <th:block th:if="${currentUser.tourist}">
+                        <a role="menuitem" th:href="@{/account}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> Mi cuenta
+                        </a>
+                        <a role="menuitem" th:href="@{/reservations}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg> Mis reservas
+                        </a>
+                        <a role="menuitem" th:href="@{/activities}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('compass', 'icon--sm')}"></svg> Explorar experiencias
+                        </a>
+                    </th:block>
+                    <th:block th:if="${currentUser.provider}">
+                        <a role="menuitem" th:href="@{/provider/account}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> Mi cuenta
+                        </a>
+                        <a role="menuitem" th:href="@{/provider}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('building', 'icon--sm')}"></svg> Mi espacio
+                        </a>
+                    </th:block>
+                    <th:block th:if="${currentUser.admin}">
+                        <a role="menuitem" th:href="@{/admin}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('grid', 'icon--sm')}"></svg> Panel de administración
+                        </a>
+                        <a role="menuitem" th:href="@{/admin/account}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> Mi cuenta
+                        </a>
+                    </th:block>
+                    <form th:action="@{/logout}" method="post" class="user-menu__logout">
+                        <button type="submit" role="menuitem">
+                            <svg th:replace="~{fragments/icons :: icon-sized('logout', 'icon--sm')}"></svg> Cerrar sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
         </nav>
     </div>
 </header>
@@ -66,7 +106,6 @@
         <div class="site-footer__grid">
             <div>
                 <a class="brand" th:href="@{/}">
-                    <img th:src="@{/images/logo.svg}" alt="">
                     <span>Uruguay <strong>Mnatural</strong></span>
                 </a>
                 <p class="site-footer__about">La oferta turística de todo el país en un solo lugar, con emprendimientos verificados.</p>

@@ -86,7 +86,7 @@ public class ReservationController {
         model.addAttribute("slot", slot);
         model.addAttribute("activity", slot.getActivity());
         model.addAttribute("participantCount", participants);
-        model.addAttribute("maxParticipants", Math.min(slot.getAvailability(), ReservationForm.MAX_PARTICIPANTS));
+        model.addAttribute("maxParticipants", ReservationForm.maxParticipantsFor(slot));
         model.addAttribute("total", slot.getPrice().multiply(BigDecimal.valueOf(participants)));
         return "reservations/new";
     }

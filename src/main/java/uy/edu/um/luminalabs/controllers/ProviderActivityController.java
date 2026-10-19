@@ -8,24 +8,33 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import uy.edu.um.luminalabs.dto.ActivityForm;
 import uy.edu.um.luminalabs.dto.SlotForm;
+import uy.edu.um.luminalabs.dto.SlotRepetition;
 import uy.edu.um.luminalabs.entities.Activity;
 import uy.edu.um.luminalabs.entities.Business;
 import uy.edu.um.luminalabs.entities.Slot;
 import uy.edu.um.luminalabs.exceptions.FieldValidationException;
 import uy.edu.um.luminalabs.repositories.ActivityCategoryRepository;
 import uy.edu.um.luminalabs.security.SecurityUser;
+import uy.edu.um.luminalabs.services.ImageProcessor;
 import uy.edu.um.luminalabs.services.LocationService;
 import uy.edu.um.luminalabs.services.ProviderActivityService;
 import uy.edu.um.luminalabs.services.ProviderSlotService;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 // Espacio del prestador: publicar y modificar actividades (CU-03) y gestionar sus slots (CU-04).
@@ -37,6 +46,9 @@ import java.util.stream.Collectors;
 public class ProviderActivityController {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+    private static final Locale SPANISH = Locale.forLanguageTag("es-UY");
 
     // RNF-12: otra transaccion cambio el slot entre que lo leimos y lo guardamos (ver Slot.version)
     private static final String CONCURRENT_CHANGE = "Otra persona modificó este horario al mismo tiempo. "
@@ -49,6 +61,19 @@ public class ProviderActivityController {
     private final Clock clock;
 
     // ---------- Actividades (CU-03) ----------
+
+    // Todas las actividades del prestador, con su proxima fecha y precio "desde"
+    @GetMapping
+    public String list(@AuthenticationPrincipal SecurityUser currentUser, Model model) {
+        List<Activity> activities = activityService.findActivities(currentUser.getId());
+        model.addAttribute("activities", activities);
+        model.addAttribute("summaries", slotService.summarize(activities));
+        model.addAttribute("canPublish", !activityService.findPublishableBusinesses(currentUser.getId()).isEmpty());
+        // Las que tienen los horarios por terminarse llevan una etiqueta junto a la proxima fecha
+        model.addAttribute("runningOutById", slotService.findRunningOut(activities).stream()
+                .collect(Collectors.toMap(item -> item.activity().getId(), Function.identity())));
+        return "provider/activities";
+    }
 
     @GetMapping("/new")
     public String newActivity(@AuthenticationPrincipal SecurityUser currentUser,
@@ -78,10 +103,11 @@ public class ProviderActivityController {
     @PostMapping("/new")
     public String create(@AuthenticationPrincipal SecurityUser currentUser,
                          @Valid @ModelAttribute("form") ActivityForm form, BindingResult bindingResult,
+                         @RequestParam(value = "photos", required = false) List<MultipartFile> photos,
                          Model model, RedirectAttributes redirectAttributes) {
         if (!bindingResult.hasErrors()) {
             try {
-                Activity activity = activityService.create(currentUser.getId(), form);
+                Activity activity = activityService.create(currentUser.getId(), form, photos);
                 redirectAttributes.addFlashAttribute("successMessage", "La actividad \"" + activity.getName()
                         + "\" quedó publicada. Ahora cargá sus fechas y horarios para que se pueda reservar.");
                 return "redirect:/provider/activities/" + activity.getId();
@@ -102,11 +128,12 @@ public class ProviderActivityController {
     @PostMapping("/{id}/edit")
     public String update(@AuthenticationPrincipal SecurityUser currentUser, @PathVariable Long id,
                          @Valid @ModelAttribute("form") ActivityForm form, BindingResult bindingResult,
+                         @RequestParam(value = "photos", required = false) List<MultipartFile> photos,
                          Model model, RedirectAttributes redirectAttributes) {
         Activity activity = activityService.findOwnActivity(currentUser.getId(), id);
         if (!bindingResult.hasErrors()) {
             try {
-                activityService.update(currentUser.getId(), id, form);
+                activityService.update(currentUser.getId(), id, form, photos);
                 redirectAttributes.addFlashAttribute("successMessage", "Guardamos los cambios de la actividad.");
                 return "redirect:/provider/activities/" + id;
             } catch (FieldValidationException e) {
@@ -125,6 +152,9 @@ public class ProviderActivityController {
         model.addAttribute("businesses", activityService.findPublishableBusinesses(currentUser.getId()));
         model.addAttribute("locationsByDepartment", locationService.findAllGroupedByDepartment());
         model.addAttribute("categories", categoryRepository.findAllByOrderByNameAsc());
+        // Limites de las fotos, para los textos y los controles de app.js
+        model.addAttribute("maxPhotos", Activity.MAX_PHOTOS);
+        model.addAttribute("maxPhotoMb", ImageProcessor.MAX_BYTES / 1024 / 1024);
         return "provider/activity-form";
     }
 
@@ -137,15 +167,52 @@ public class ProviderActivityController {
         return showManagePage(currentUser, id, model);
     }
 
+    // Para los formularios de horarios: hasta que fecha se puede cargar y las opciones de repeticion
+    @ModelAttribute("lastSlotDate")
+    public LocalDate lastSlotDate() {
+        return slotService.lastAllowedDate();
+    }
+
+    @ModelAttribute("repetitions")
+    public SlotRepetition[] repetitions() {
+        return SlotRepetition.values();
+    }
+
+    // Limites de la repeticion (SlotForm), como variables porque Thymeleaf no deja acceder a clases en th:data-*
+    @ModelAttribute("maxMonthsAhead")
+    public int maxMonthsAhead() {
+        return SlotForm.MAX_MONTHS_AHEAD;
+    }
+
+    @ModelAttribute("suggestedRepeatMonths")
+    public int suggestedRepeatMonths() {
+        return SlotForm.SUGGESTED_REPEAT_MONTHS;
+    }
+
+    @ModelAttribute("maxSlotsPerRepetition")
+    public int maxSlotsPerRepetition() {
+        return SlotForm.MAX_SLOTS_PER_REPETITION;
+    }
+
+    @ModelAttribute("weekdayOptions")
+    public List<WeekdayOption> weekdayOptions() {
+        return Arrays.stream(DayOfWeek.values())
+                .map(day -> new WeekdayOption(day, day.getDisplayName(TextStyle.SHORT, SPANISH).replace(".", "")))
+                .toList();
+    }
+
+    // Un dia de la semana para los botones de "Ciertos dias de la semana" (ej. MONDAY, "lun")
+    public record WeekdayOption(DayOfWeek day, String label) {
+    }
+
     @PostMapping("/{id}/slots")
     public String addSlot(@AuthenticationPrincipal SecurityUser currentUser, @PathVariable Long id,
                           @Valid @ModelAttribute("slotForm") SlotForm slotForm, BindingResult bindingResult,
                           Model model, RedirectAttributes redirectAttributes) {
         if (!bindingResult.hasErrors()) {
             try {
-                Slot slot = slotService.addSlot(currentUser.getId(), id, slotForm);
-                redirectAttributes.addFlashAttribute("successMessage",
-                        "Agregamos el horario del " + slot.getStartTime().format(DATE_TIME) + ".");
+                ProviderSlotService.AddedSlots added = slotService.addSlots(currentUser.getId(), id, slotForm);
+                redirectAttributes.addFlashAttribute("successMessage", addedMessage(added));
                 return "redirect:/provider/activities/" + id;
             } catch (FieldValidationException e) {
                 reject(bindingResult, e);
@@ -216,13 +283,39 @@ public class ProviderActivityController {
         LocalDateTime now = LocalDateTime.now(clock);
         Map<Boolean, List<Slot>> slotsByStarted = slotService.findSlots(currentUser.getId(), id).stream()
                 .collect(Collectors.partitioningBy(slot -> slot.hasStarted(now)));
-        model.addAttribute("activity", activityService.findOwnActivity(currentUser.getId(), id));
+        Activity activity = activityService.findOwnActivity(currentUser.getId(), id);
+        model.addAttribute("activity", activity);
+        // Aviso si a esta actividad se le terminan los horarios (null si no)
+        model.addAttribute("runningOut", slotService.findRunningOut(List.of(activity)).stream().findFirst().orElse(null));
         model.addAttribute("upcomingSlots", slotsByStarted.get(false));
         model.addAttribute("pastSlots", slotsByStarted.get(true).reversed());
         return "provider/activity-manage";
     }
 
+    // "Agregamos el horario del ..." o, al repetir, "Agregamos 13 horarios a las 11:00, del 21/10/2026 al 13/01/2027."
+    private static String addedMessage(ProviderSlotService.AddedSlots added) {
+        List<Slot> created = added.created();
+        Slot first = created.getFirst();
+        String message = created.size() == 1
+                ? "Agregamos el horario del " + first.getStartTime().format(DATE_TIME) + "."
+                : "Agregamos " + created.size() + " horarios a las " + first.getStartTime().format(TIME) + ", del "
+                + first.getStartTime().format(DATE) + " al " + created.getLast().getStartTime().format(DATE) + ".";
+        if (added.skipped() > 0) {
+            message += added.skipped() == 1
+                    ? " Salteamos 1 fecha que ya tenía un horario a esa hora."
+                    : " Salteamos " + added.skipped() + " fechas que ya tenían un horario a esa hora.";
+        }
+        return message;
+    }
+
+    // "photos" no es un campo de ActivityForm (las fotos llegan como archivos aparte): va como error general
     private static void reject(BindingResult bindingResult, FieldValidationException e) {
-        e.getFieldErrors().forEach((field, message) -> bindingResult.rejectValue(field, "invalid", message));
+        e.getFieldErrors().forEach((field, message) -> {
+            if ("photos".equals(field)) {
+                bindingResult.reject("photos", message);
+            } else {
+                bindingResult.rejectValue(field, "invalid", message);
+            }
+        });
     }
 }

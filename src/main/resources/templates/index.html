@@ -77,8 +77,13 @@
             <div class="destination-grid">
                 <a class="destination" th:each="destination, iter : ${destinations}"
                    th:href="@{/activities(department=${destination.department})}">
+                    <!-- Foto de alguna localidad del departamento (la carga el administrador); si no hay, un paisaje -->
                     <div class="media" th:classappend="${'media--' + (iter.index % 6)}">
-                        <svg th:replace="~{fragments/layout :: landscape('')}"></svg>
+                        <th:block th:with="photoId=${departmentPhotos.get(destination.department)}">
+                            <img class="media__photo" th:if="${photoId != null}" th:src="@{/photos/{id}(id=${photoId})}"
+                                 th:alt="${destination.department.label}" loading="lazy">
+                            <th:block th:if="${photoId == null}"><svg th:replace="~{fragments/layout :: landscape('')}"></svg></th:block>
+                        </th:block>
                     </div>
                     <span class="destination__text">
                         <strong th:text="${destination.department.label}">Rocha</strong>
