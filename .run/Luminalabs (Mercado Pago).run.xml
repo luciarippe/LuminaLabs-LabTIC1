@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- Arranca la aplicacion con el perfil "mercadopago" (sandbox de Mercado Pago, ver application-mercadopago.properties).
+       Necesita el archivo mercadopago-credentials.properties en la carpeta del proyecto. -->
+  <configuration default="false" name="Luminalabs (Mercado Pago)" type="Application" factoryName="Application">
+    <envs>
+      <env name="SPRING_PROFILES_ACTIVE" value="mercadopago" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="uy.edu.um.luminalabs.LuminalabsApplication" />
+    <module name="luminalabs" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

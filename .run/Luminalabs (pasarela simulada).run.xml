@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- Arranca la aplicacion con la pasarela de pagos simulada (sin perfil: lo de application.properties) -->
+  <configuration default="false" name="Luminalabs (pasarela simulada)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="uy.edu.um.luminalabs.LuminalabsApplication" />
+    <module name="luminalabs" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
