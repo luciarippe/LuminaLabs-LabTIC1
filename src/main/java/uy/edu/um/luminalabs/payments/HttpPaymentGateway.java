@@ -2,39 +2,38 @@ package uy.edu.um.luminalabs.payments;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 import uy.edu.um.luminalabs.payments.GatewayResult.Outcome;
+import uy.edu.um.luminalabs.payments.PaymentCard.CardDetails;
 
-import java.net.SocketTimeoutException;
-import java.time.Duration;
+import java.math.BigDecimal;
 
-// Cliente HTTP de la pasarela de pagos (RNF-09: tolera errores, timeouts e indisponibilidad).
+// Cliente HTTP de la pasarela de pagos SIMULADA (RNF-09: tolera errores, timeouts e indisponibilidad).
 // Traduce cada situacion a un GatewayResult; el que decide que hacer con cada una es PaymentService.
+// Se usa con app.payments.provider=mock (el valor por defecto); con Mercado Pago se usa MercadoPagoPaymentGateway.
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "app.payments.provider", havingValue = "mock", matchIfMissing = true)
 public class HttpPaymentGateway implements PaymentGateway {
 
     private final RestClient restClient;
 
     public HttpPaymentGateway(@Value("${app.payments.base-url}") String baseUrl,
                               @Value("${app.payments.timeout-millis}") long timeoutMillis) {
-        // Sin timeout, si la pasarela no responde el turista quedaria esperando para siempre
-        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofMillis(timeoutMillis));
-        requestFactory.setReadTimeout(Duration.ofMillis(timeoutMillis));
-        this.restClient = RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory).build();
+        this.restClient = RestClient.builder().baseUrl(baseUrl)
+                .requestFactory(GatewayHttp.requestFactory(timeoutMillis)).build();
     }
 
     // API de la pasarela: POST /v1/payments
     @Override
     public GatewayResult charge(ChargeRequest request) {
         try {
-            GatewayPayment response = restClient.post().uri("/v1/payments").body(request)
+            GatewayPayment response = restClient.post().uri("/v1/payments").body(toGatewayCharge(request))
                     .retrieve().body(GatewayPayment.class);
             return toResult(response);
         } catch (HttpClientErrorException e) {
@@ -47,7 +46,7 @@ public class HttpPaymentGateway implements PaymentGateway {
         } catch (Exception e) {
             // Cualquier otro problema de conexion. Se atrapa Exception y no solo ResourceAccessException porque
             // segun en que momento ocurra, el timeout puede llegar como SocketTimeoutException sin envolver.
-            return connectionProblem(request.reference(), e);
+            return GatewayHttp.connectionProblem(request.reference(), e);
         }
     }
 
@@ -83,29 +82,17 @@ public class HttpPaymentGateway implements PaymentGateway {
             log.warn("Gateway error for refund {}: {}", request.reference(), e.getStatusCode());
             return GatewayResult.of(Outcome.UNAVAILABLE);
         } catch (Exception e) {
-            return connectionProblem(request.reference(), e);
+            return GatewayHttp.connectionProblem(request.reference(), e);
         }
     }
 
-    // Un timeout NO significa que no se cobro: el pedido pudo llegar y procesarse sin que nos llegue la
-    // respuesta. Por eso queda "sin respuesta" y despues se consulta. Si no se pudo ni conectar, no se cobro.
-    private static GatewayResult connectionProblem(String reference, Exception e) {
-        if (isTimeout(e)) {
-            log.warn("Gateway timeout for {}", reference);
-            return GatewayResult.of(Outcome.NO_RESPONSE);
+    // La pasarela simulada recibe los datos de la tarjeta tal cual (no genera tokens como Mercado Pago)
+    private static GatewayCharge toGatewayCharge(ChargeRequest request) {
+        if (!(request.card() instanceof CardDetails card)) {
+            throw new IllegalArgumentException("The mock gateway needs the card details, got " + request.card());
         }
-        log.warn("Gateway unreachable for {}: {}", reference, e.toString());
-        return GatewayResult.of(Outcome.UNAVAILABLE);
-    }
-
-    // Busca un timeout en la excepcion o en sus causas (puede venir envuelto en otras excepciones)
-    private static boolean isTimeout(Throwable e) {
-        for (Throwable current = e; current != null; current = current.getCause()) {
-            if (current instanceof SocketTimeoutException) {
-                return true;
-            }
-        }
-        return false;
+        return new GatewayCharge(request.reference(), request.amount(), request.currency(),
+                card.number(), card.holder(), card.expiry(), card.cvv());
     }
 
     private static GatewayResult toResult(GatewayPayment response) {
@@ -114,6 +101,11 @@ public class HttpPaymentGateway implements PaymentGateway {
         }
         Outcome outcome = "APPROVED".equals(response.status()) ? Outcome.APPROVED : Outcome.DECLINED;
         return new GatewayResult(outcome, response.id());
+    }
+
+    // Pedido de cobro en JSON
+    record GatewayCharge(String reference, BigDecimal amount, String currency,
+                         String cardNumber, String cardHolder, String expiry, String cvv) {
     }
 
     // Respuesta JSON de la pasarela

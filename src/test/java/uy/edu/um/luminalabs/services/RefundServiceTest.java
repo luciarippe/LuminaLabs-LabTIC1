@@ -71,7 +71,7 @@ class RefundServiceTest {
         assertEquals(PaymentStatus.APPROVED, service.processRefund(50L));
 
         // Se pide con la referencia de la devolucion y el id del cobro original en la pasarela
-        verify(gateway).refund(new RefundRequest("REF-50", "gw-charge", new BigDecimal("8.50"), "UYU"));
+        verify(gateway).refund(new RefundRequest(refund.getReference(), "gw-charge", new BigDecimal("8.50"), "UYU"));
         assertEquals("gw-refund", refund.getExternalId());
     }
 

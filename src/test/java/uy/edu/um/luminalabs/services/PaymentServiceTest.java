@@ -20,6 +20,7 @@ import uy.edu.um.luminalabs.exceptions.ReservationNotFoundException;
 import uy.edu.um.luminalabs.payments.ChargeRequest;
 import uy.edu.um.luminalabs.payments.GatewayResult;
 import uy.edu.um.luminalabs.payments.GatewayResult.Outcome;
+import uy.edu.um.luminalabs.payments.PaymentCard;
 import uy.edu.um.luminalabs.payments.PaymentGateway;
 import uy.edu.um.luminalabs.repositories.PaymentRepository;
 import uy.edu.um.luminalabs.repositories.ReservationRepository;
@@ -141,8 +142,8 @@ class PaymentServiceTest {
         ArgumentCaptor<ChargeRequest> request = ArgumentCaptor.forClass(ChargeRequest.class);
         verify(gateway).charge(request.capture());
         assertEquals(new BigDecimal("3000.00"), request.getValue().amount());
-        assertEquals("4111111111111111", request.getValue().cardNumber());
-        assertEquals("PAY-100", request.getValue().reference());
+        assertEquals("4111111111111111", ((PaymentCard.CardDetails) request.getValue().card()).number());
+        assertEquals(storedPayments.getFirst().getReference(), request.getValue().reference());
         assertEquals("1111", storedPayments.getFirst().getCardLastDigits());
     }
 

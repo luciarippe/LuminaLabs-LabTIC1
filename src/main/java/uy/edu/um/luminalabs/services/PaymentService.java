@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import uy.edu.um.luminalabs.dto.CardForm;
+import uy.edu.um.luminalabs.dto.PaymentCardForm;
 import uy.edu.um.luminalabs.entities.*;
 import uy.edu.um.luminalabs.events.MailRecipient;
 import uy.edu.um.luminalabs.events.RefundRequestedEvent;
@@ -67,7 +67,7 @@ public class PaymentService {
         this.inFlightWindow = Duration.ofMillis(timeoutMillis).plusSeconds(2);
     }
 
-    public Result pay(Long touristId, Long reservationId, CardForm card) {
+    public Result pay(Long touristId, Long reservationId, PaymentCardForm card) {
         // Paso 1 (transaccion): validar, resolver intentos anteriores y registrar el nuevo
         Attempt attempt = transactionTemplate.execute(status -> startAttempt(touristId, reservationId, card));
         if (attempt.result() != null) {
@@ -80,7 +80,7 @@ public class PaymentService {
         }
         // Paso 2 (sin transaccion): llamar a la pasarela
         GatewayResult gatewayResult = gateway.charge(new ChargeRequest(attempt.reference(), attempt.amount(), currency,
-                card.getCardDigits(), card.getCardHolder().trim(), card.getExpiry(), card.getCvv()));
+                card.toPaymentCard()));
         // Paso 3 (transaccion): guardar el resultado
         return transactionTemplate.execute(status -> recordResult(attempt.paymentId(), gatewayResult));
     }
@@ -174,7 +174,7 @@ public class PaymentService {
 
     // ---------- Paso 1 ----------
 
-    private Attempt startAttempt(Long touristId, Long reservationId, CardForm card) {
+    private Attempt startAttempt(Long touristId, Long reservationId, PaymentCardForm card) {
         LocalDateTime now = LocalDateTime.now(clock);
         // Bloquea la reserva: si llegan dos pedidos de pago a la vez, el segundo espera al primero
         Reservation reservation = lockOwnReservation(touristId, reservationId);

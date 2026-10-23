@@ -6,14 +6,17 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import uy.edu.um.luminalabs.payments.PaymentCard;
+import uy.edu.um.luminalabs.payments.PaymentCard.CardDetails;
 
 import java.time.YearMonth;
 
-// CU-01 paso 7 y CU-16 paso 3: datos de la tarjeta del turista. No se guardan: se mandan a la pasarela
-// y de ellos solo quedan en la base el titular y los ultimos 4 digitos (ver Payment).
+// CU-01 paso 7 y CU-16 paso 3 con la pasarela simulada: datos de la tarjeta del turista. No se guardan: se mandan
+// a la pasarela y de ellos solo quedan en la base el titular y los ultimos 4 digitos (ver Payment).
+// Con Mercado Pago se usa CardTokenForm.
 @Getter
 @Setter
-public class CardForm {
+public class CardForm implements PaymentCardForm {
 
     @NotBlank(message = "Ingresá el nombre como figura en la tarjeta.")
     @Size(max = 100, message = "Máximo 100 caracteres.")
@@ -36,9 +39,15 @@ public class CardForm {
         return cardNumber == null ? "" : cardNumber.replaceAll("\\D", "");
     }
 
+    @Override
     public String getLastDigits() {
         String digits = getCardDigits();
         return digits.length() < 4 ? digits : digits.substring(digits.length() - 4);
+    }
+
+    @Override
+    public PaymentCard toPaymentCard() {
+        return new CardDetails(getCardDigits(), cardHolder.trim(), expiry, cvv);
     }
 
     // Bean Validation trata este metodo como una propiedad "notExpired": el error queda en ese campo y pay.html

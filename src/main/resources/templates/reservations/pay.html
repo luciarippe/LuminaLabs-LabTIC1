@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
-<!-- CU-01 pasos 7 y 8, CU-16 pasos 2 y 3: datos de la tarjeta -->
+<!-- CU-01 pasos 7 y 8, CU-16 pasos 2 y 3: datos de la tarjeta.
+     Con la pasarela simulada se usa nuestro formulario; con Mercado Pago, el suyo (ver PaymentController). -->
 <head th:replace="~{fragments/layout :: head('Pagar reserva')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header(true)}"></header>
@@ -20,8 +21,9 @@
     <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
     <div class="register-layout">
-        <form class="form-section" th:action="@{/reservations/{id}/pay(id=${reservation.id})}" th:object="${cardForm}"
-              method="post" novalidate>
+        <!-- Pasarela simulada: los datos de la tarjeta se mandan a nuestro servidor -->
+        <form class="form-section" th:unless="${mercadoPago}" th:action="@{/reservations/{id}/pay(id=${reservation.id})}"
+              th:object="${cardForm}" method="post" novalidate>
             <div class="form-section__title"><h2>Datos de la tarjeta</h2></div>
             <p class="form-section__intro">El pago lo procesa la pasarela de pagos. Nosotros no guardamos el número de tu tarjeta.</p>
             <div class="form-grid">
@@ -58,6 +60,30 @@
             </div>
         </form>
 
+        <!-- Mercado Pago: el formulario de la tarjeta lo dibuja Mercado Pago (Card Payment Brick) dentro de la pagina.
+             La tarjeta va directo a Mercado Pago, que devuelve un token; a nuestro servidor solo llega ese token,
+             en el formulario oculto de abajo. -->
+        <section class="form-section" th:if="${mercadoPago}">
+            <div class="form-section__title"><h2>Datos de la tarjeta</h2></div>
+            <p class="form-section__intro">El pago lo procesa Mercado Pago. Los datos de tu tarjeta van directo a
+                Mercado Pago: nosotros nunca los vemos.</p>
+            <div id="cardPaymentBrick_container"></div>
+            <div class="alert alert--error" id="brick-error" style="display: none">No pudimos cargar el formulario de pago de Mercado
+                Pago. Recargá la página o probá de nuevo en unos minutos.</div>
+            <form id="mp-payment-form" th:action="@{/reservations/{id}/pay/token(id=${reservation.id})}" method="post">
+                <input type="hidden" name="token">
+                <input type="hidden" name="paymentMethodId">
+                <input type="hidden" name="paymentTypeId">
+                <input type="hidden" name="installments">
+                <input type="hidden" name="cardHolder">
+                <input type="hidden" name="lastDigits">
+                <input type="hidden" name="payerEmail">
+            </form>
+            <div class="form-actions">
+                <a class="btn btn--ghost" th:href="@{/reservations/{id}(id=${reservation.id})}">Volver</a>
+            </div>
+        </section>
+
         <aside class="register-aside">
             <div class="card">
                 <h3>Resumen</h3>
@@ -70,7 +96,7 @@
             </div>
 
             <!-- Solo para probar: la pasarela simulada responde segun la tarjeta (ver MockPaymentGatewayController) -->
-            <div class="card test-cards">
+            <div class="card test-cards" th:unless="${mercadoPago}">
                 <h3>Tarjetas de prueba</h3>
                 <p class="muted small">Pasarela simulada. Usá cualquier titular, un vencimiento futuro y cualquier código.</p>
                 <dl>
@@ -82,10 +108,79 @@
                     <div><dt>4000 0000 0000 0069</dt><dd>Aprobado, pero las devoluciones fallan 2 veces</dd></div>
                 </dl>
             </div>
+
+            <!-- Solo para probar: tarjetas de prueba del sandbox de Mercado Pago. El resultado lo decide el titular. -->
+            <div class="card test-cards" th:if="${mercadoPago}">
+                <h3>Tarjetas de prueba</h3>
+                <!-- La CI 12345678 de la documentacion de Mercado Pago no pasa la validacion del Brick (digito
+                     verificador incorrecto): 12345672 si es valida y en el sandbox funciona igual -->
+                <p class="muted small">Sandbox de Mercado Pago: no se cobra de verdad. Código 123, vencimiento 11/30,
+                    documento CI 12345672.</p>
+                <dl>
+                    <div><dt>5031 7557 3453 0604</dt><dd>Mastercard</dd></div>
+                    <div><dt>4509 9535 6623 3704</dt><dd>Visa</dd></div>
+                </dl>
+                <p class="muted small">Como titular escribí:</p>
+                <dl>
+                    <div><dt>APRO</dt><dd>Aprobado</dd></div>
+                    <div><dt>OTHE</dt><dd>Rechazado</dd></div>
+                    <div><dt>FUND</dt><dd>Rechazado por fondos insuficientes</dd></div>
+                    <div><dt>CONT</dt><dd>Pendiente</dd></div>
+                </dl>
+            </div>
         </aside>
     </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<th:block th:if="${mercadoPago}">
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <script th:inline="javascript">
+        (function () {
+            const publicKey = /*[[${mercadoPagoPublicKey}]]*/ '';
+            const amount = /*[[${reservation.totalAmount}]]*/ 0;
+            const email = /*[[${reservation.tourist.email}]]*/ '';
+            const form = document.getElementById('mp-payment-form');
+            const showError = () => document.getElementById('brick-error').style.display = '';
+
+            if (typeof MercadoPago === 'undefined') {
+                showError();
+                return;
+            }
+            const mp = new MercadoPago(publicKey, { locale: 'es-UY' });
+            mp.bricks().create('cardPayment', 'cardPaymentBrick_container', {
+                initialization: { amount: Number(amount), payer: { email: email } },
+                // Pago en una sola cuota
+                customization: { paymentMethods: { maxInstallments: 1 } },
+                callbacks: {
+                    onReady: () => {},
+                    // El Brick ya cambio la tarjeta por un token: se manda a nuestro servidor con un POST comun
+                    // (con su token CSRF), igual que el formulario de la pasarela simulada
+                    onSubmit: (formData, additionalData) => {
+                        form.elements.token.value = formData.token;
+                        form.elements.paymentMethodId.value = formData.payment_method_id;
+                        form.elements.paymentTypeId.value = formData.payment_type_id
+                            || (additionalData && additionalData.paymentTypeId) || 'credit_card';
+                        form.elements.installments.value = formData.installments || 1;
+                        form.elements.cardHolder.value = (additionalData && additionalData.cardholderName) || '';
+                        form.elements.lastDigits.value = (additionalData && additionalData.lastFourDigits) || '';
+                        form.elements.payerEmail.value = (formData.payer && formData.payer.email) || email;
+                        form.submit();
+                        // La pagina se va a recargar con el resultado: el Brick queda en "procesando" hasta entonces
+                        return new Promise(() => {});
+                    },
+                    // Los errores "non_critical" (ej. un dato mal escrito) los muestra el propio Brick
+                    onError: (error) => {
+                        console.error(error);
+                        if (!error || error.type === 'critical') {
+                            showError();
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+</th:block>
 </body>
 </html>

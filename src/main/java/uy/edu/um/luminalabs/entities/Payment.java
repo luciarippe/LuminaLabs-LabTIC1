@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 // PAYMENT del MER: cada intento de pago de una reserva, con su fecha, monto y estado (RF-18).
 // Una reserva puede tener varios intentos (ej. uno rechazado y despues uno aprobado).
@@ -27,6 +28,12 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     private PaymentType type;
+
+    // Referencia que se le manda a la pasarela. Con ella la pasarela reconoce un pedido repetido
+    // (no cobra ni devuelve dos veces lo mismo) y se le puede preguntar despues por el resultado.
+    // Lleva un UUID para que sea unica aunque varias bases usen la misma cuenta de la pasarela (ver V9).
+    @Column(name = "reference", nullable = false, unique = true, length = 64)
+    private String reference;
 
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
@@ -58,6 +65,7 @@ public class Payment {
                    String cardLastDigits, LocalDateTime now) {
         this.reservation = reservation;
         this.type = type;
+        this.reference = (type == PaymentType.REFUND ? "REF-" : "PAY-") + UUID.randomUUID();
         this.amount = amount;
         this.cardHolder = cardHolder;
         this.cardLastDigits = cardLastDigits;
@@ -69,12 +77,6 @@ public class Payment {
     public static Payment refundOf(Payment charge, BigDecimal amount, LocalDateTime now) {
         return new Payment(charge.getReservation(), PaymentType.REFUND, amount, charge.getCardHolder(),
                 charge.getCardLastDigits(), now);
-    }
-
-    // Referencia que se le manda a la pasarela. Con ella la pasarela reconoce un pedido repetido
-    // (no cobra ni devuelve dos veces lo mismo) y se le puede preguntar despues por el resultado.
-    public String getReference() {
-        return (type == PaymentType.REFUND ? "REF-" : "PAY-") + id;
     }
 
     public boolean isAwaitingResponse() {

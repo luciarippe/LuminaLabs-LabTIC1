@@ -64,7 +64,8 @@ class HttpPaymentGatewayTest {
     }
 
     private GatewayResult charge() {
-        return gateway.charge(new ChargeRequest("PAY-1", BigDecimal.TEN, "UYU", "4111111111111111", "Ana", "12/30", "123"));
+        return gateway.charge(new ChargeRequest("PAY-1", BigDecimal.TEN, "UYU",
+                new PaymentCard.CardDetails("4111111111111111", "Ana", "12/30", "123")));
     }
 
     @Test
