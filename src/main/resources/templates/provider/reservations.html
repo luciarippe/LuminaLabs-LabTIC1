@@ -112,8 +112,8 @@
                          th:attr="aria-label=|${slot.reservedSeats} de ${slot.maxCapacity} lugares ocupados|">
                         <span th:style="|width: ${item.occupancyPercent()}%|"></span>
                     </div>
-                    <!-- El desglose cuenta las reservas listadas: tiene sentido solo con todas las vigentes -->
-                    <span class="small muted" th:if="${filters.status().name() == 'ACTIVE' or filters.status().name() == 'ALL'}">
+                    <!-- El desglose cuenta confirmadas y pendientes de pago: tiene sentido solo con las vigentes -->
+                    <span class="small muted" th:if="${filters.status().name() == 'ACTIVE'}">
                         <span th:text="${item.confirmedSeats() == 1} ? '1 confirmado' : |${item.confirmedSeats()} confirmados|">6 confirmados</span>
                         <th:block th:if="${item.pendingSeats() > 0}"> · <span
                                 th:text="${item.pendingSeats() == 1} ? '1 pendiente de pago' : |${item.pendingSeats()} pendientes de pago|">2 pendientes de pago</span></th:block>

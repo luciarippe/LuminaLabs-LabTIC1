@@ -10,8 +10,8 @@
     <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Inter para el texto; Fraunces solo para el nombre "Uruguay Mnatural" (.brand) -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+    <!-- Inter para todo el texto (el nombre "Uruguay Mnatural" es la imagen del logo) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/form-validation.js}" defer></script>
@@ -22,7 +22,7 @@
 <header th:fragment="header(showSearch)" class="site-header">
     <div class="container site-header__inner">
         <a class="brand" th:href="@{/}">
-            <span>Uruguay <strong>Mnatural</strong></span>
+            <img class="brand__logo" th:src="@{/images/logo-uruguay-mnatural.png}" alt="Uruguay Mnatural" width="116" height="44">
         </a>
 
         <form class="header-search" th:if="${showSearch}" th:action="@{/activities}" method="get" role="search">
@@ -106,7 +106,7 @@
         <div class="site-footer__grid">
             <div>
                 <a class="brand" th:href="@{/}">
-                    <span>Uruguay <strong>Mnatural</strong></span>
+                    <img class="brand__logo" th:src="@{/images/logo-uruguay-mnatural.png}" alt="Uruguay Mnatural" width="116" height="44">
                 </a>
                 <p class="site-footer__about">La oferta turística de todo el país en un solo lugar, con emprendimientos verificados.</p>
             </div>

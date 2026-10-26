@@ -6,7 +6,8 @@
 <aside th:fragment="sidebar(active)" class="admin-sidebar">
     <div class="admin-sidebar__brand">
         <a class="brand" th:href="@{/provider}">
-            <span>Uruguay <strong>Mnatural</strong></span>
+            <!-- Version clara del logo: el menu lateral es oscuro -->
+            <img class="brand__logo" th:src="@{/images/logo-uruguay-mnatural-claro.png}" alt="Uruguay Mnatural" width="116" height="44">
         </a>
         <span class="admin-badge">Espacio del prestador</span>
     </div>
