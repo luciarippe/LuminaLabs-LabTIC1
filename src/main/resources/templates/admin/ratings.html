@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Contenido > Valoraciones: moderar las resenas. Ocultar saca la valoracion de la actividad y del promedio (con un
+     motivo que se le envia al turista); se puede volver a mostrar. -->
+<head th:replace="~{fragments/layout :: head('Valoraciones')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('ratings')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Contenido</span>
+                <h1>Valoraciones</h1>
+                <p>Ocultá las que no corresponden (insultos, datos personales, publicidad o algo que no tiene que ver con la
+                    actividad). Una valoración oculta no se muestra ni cuenta en el promedio, y se puede volver a mostrar.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section class="panel">
+            <div class="admin-toolbar">
+                <form class="admin-search" th:action="@{/admin/ratings}" method="get" role="search">
+                    <input type="hidden" name="filter" th:value="${filter}">
+                    <label class="visually-hidden" for="rating-search">Buscar valoración</label>
+                    <div class="admin-search__field">
+                        <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg>
+                        <input class="input" type="search" id="rating-search" name="q" th:value="${query}"
+                               placeholder="Buscar en el texto, la actividad o el autor…" maxlength="150">
+                    </div>
+                    <button type="submit" class="btn btn--primary">Buscar</button>
+                    <a class="btn btn--ghost" th:if="${!query.isEmpty()}" th:href="@{/admin/ratings(filter=${filter})}">Volver al listado</a>
+                </form>
+
+                <nav class="tabs" aria-label="Filtrar valoraciones">
+                    <a class="tab" th:href="@{/admin/ratings(q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'ALL'} ? 'is-active'">Todas <span class="tab__count" th:text="${search.all()}">0</span></a>
+                    <a class="tab" th:href="@{/admin/ratings(filter='VISIBLE', q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'VISIBLE'} ? 'is-active'">Publicadas <span class="tab__count" th:text="${search.visible()}">0</span></a>
+                    <a class="tab" th:href="@{/admin/ratings(filter='LOW', q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'LOW'} ? 'is-active'">1 o 2 estrellas <span class="tab__count" th:text="${search.low()}">0</span></a>
+                    <a class="tab" th:href="@{/admin/ratings(filter='HIDDEN', q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'HIDDEN'} ? 'is-active'">Ocultas <span class="tab__count" th:text="${search.hidden()}">0</span></a>
+                </nav>
+            </div>
+
+            <ul class="moderation-list" th:unless="${search.ratings().isEmpty()}">
+                <li class="moderation-item" th:each="rating : ${search.ratings()}" th:id="|rating-${rating.id}|"
+                    th:classappend="${rating.hidden} ? 'is-hidden'">
+                    <div class="moderation-item__head">
+                        <span th:replace="~{fragments/rating :: stars(${rating.stars})}"></span>
+                        <a class="moderation-item__activity" th:href="@{/activities/{id}#valoraciones(id=${rating.activity.id})}"
+                           target="_blank" rel="noopener" th:text="${rating.activity.name}">Actividad</a>
+                        <span class="badge badge--suspended" th:if="${rating.hidden}">Oculta</span>
+                    </div>
+                    <h3 class="moderation-item__title" th:text="${rating.title}">Titular</h3>
+                    <p class="moderation-item__comment" th:text="${rating.comment}">Comentario</p>
+                    <div class="moderation-item__meta">
+                        <a th:href="@{/admin/users/{id}(id=${rating.reservation.tourist.id})}" th:text="${rating.reservation.tourist.fullName}">Autor</a>
+                        <span th:text="|Publicada el ${#temporals.format(rating.createdAt, 'dd/MM/yyyy')}|">Fecha</span>
+                        <span th:text="|Reserva ${rating.reservation.code}|">R-000001</span>
+                    </div>
+
+                    <!-- Oculta: por que, y volver a mostrarla -->
+                    <div class="moderation-item__hidden" th:if="${rating.hidden}">
+                        <span><strong>Oculta el <span th:text="${#temporals.format(rating.hiddenAt, 'dd/MM/yyyy')}">fecha</span>:</strong>
+                            <span th:text="${rating.hiddenReason}">Motivo</span></span>
+                        <form method="post" th:action="@{/admin/ratings/{id}/restore(id=${rating.id})}" class="inline-form">
+                            <input type="hidden" name="filter" th:value="${filter}">
+                            <input type="hidden" name="q" th:value="${query}">
+                            <button type="submit" class="btn btn--sm">Volver a mostrar</button>
+                        </form>
+                    </div>
+
+                    <!-- Visible: ocultarla con un motivo (se despliega) -->
+                    <details class="moderation-item__hide" th:unless="${rating.hidden}">
+                        <summary>Ocultar</summary>
+                        <form method="post" th:action="@{/admin/ratings/{id}/hide(id=${rating.id})}" class="moderation-item__form">
+                            <input type="hidden" name="filter" th:value="${filter}">
+                            <input type="hidden" name="q" th:value="${query}">
+                            <label class="visually-hidden" th:for="|reason-${rating.id}|">Motivo</label>
+                            <input class="input" type="text" name="reason" th:id="|reason-${rating.id}|" maxlength="500" required
+                                   placeholder="Motivo (se lo enviamos al turista por correo)">
+                            <button type="submit" class="btn btn--sm btn--danger">Ocultar valoración</button>
+                        </form>
+                    </details>
+                </li>
+            </ul>
+
+            <div class="empty-state" th:if="${search.ratings().isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg></div>
+                <h3>No hay valoraciones para mostrar</h3>
+                <p th:text="${query.isEmpty()} ? 'No hay valoraciones en esta pestaña.' : 'Ninguna valoración coincide con la búsqueda.'">Texto</p>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

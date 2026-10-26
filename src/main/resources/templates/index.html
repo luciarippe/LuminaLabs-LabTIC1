@@ -77,7 +77,7 @@
             <div class="destination-grid">
                 <a class="destination" th:each="destination, iter : ${destinations}"
                    th:href="@{/activities(department=${destination.department})}">
-                    <!-- Foto de alguna localidad del departamento (la carga el administrador); si no hay, un paisaje -->
+                    <!-- Foto del departamento (la carga el administrador); si no tiene, un paisaje -->
                     <div class="media" th:classappend="${'media--' + (iter.index % 6)}">
                         <th:block th:with="photoId=${departmentPhotos.get(destination.department)}">
                             <img class="media__photo" th:if="${photoId != null}" th:src="@{/photos/{id}(id=${photoId})}"

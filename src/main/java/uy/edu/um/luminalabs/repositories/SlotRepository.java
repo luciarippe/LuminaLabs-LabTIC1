@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import uy.edu.um.luminalabs.entities.BusinessStatus;
+import uy.edu.um.luminalabs.entities.Department;
 import uy.edu.um.luminalabs.entities.Slot;
 import uy.edu.um.luminalabs.entities.SlotStatus;
 
@@ -57,6 +59,24 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
             from Slot s join s.activity a join a.business b join b.providers p
             where p.id = :providerId and s.status = :status and s.startTime > :after""")
     UpcomingTotals countUpcomingForProvider(Long providerId, SlotStatus status, LocalDateTime after);
+
+    // API publica (CU-17 b): horarios activos de un dia en un departamento o en una localidad, solo de
+    // emprendimientos aprobados, con la actividad lista para responder
+    @Query("""
+            select s from Slot s join fetch s.activity a join fetch a.location l join fetch a.business b
+            where s.status = :status and s.startTime >= :from and s.startTime < :to
+              and b.status = :businessStatus and l.department = :department
+            order by s.startTime asc""")
+    List<Slot> findForDayInDepartment(Department department, LocalDateTime from, LocalDateTime to,
+                                      SlotStatus status, BusinessStatus businessStatus);
+
+    @Query("""
+            select s from Slot s join fetch s.activity a join fetch a.location l join fetch a.business b
+            where s.status = :status and s.startTime >= :from and s.startTime < :to
+              and b.status = :businessStatus and l.id = :locationId
+            order by s.startTime asc""")
+    List<Slot> findForDayInLocation(Long locationId, LocalDateTime from, LocalDateTime to,
+                                    SlotStatus status, BusinessStatus businessStatus);
 
     interface UpcomingTotals {
         long getSlots();

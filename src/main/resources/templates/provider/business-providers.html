@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-15: prestadores de un emprendimiento. Se suman por correo y se quitan; siempre queda al menos uno. -->
+<head th:replace="~{fragments/layout :: head(|Prestadores de ${business.legalName}|)}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('businesses')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow"><a th:href="@{/provider/businesses}">Mis emprendimientos</a></span>
+                <h1 th:text="|Prestadores de ${business.legalName}|">Prestadores</h1>
+                <p>Las personas que gestionan este emprendimiento: todas pueden publicar actividades, cargar fechas,
+                    ver reservas y sumar o quitar prestadores.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="alert alert--info" role="status" th:unless="${business.approved}">
+            <div>Vas a poder sumar o quitar prestadores cuando el emprendimiento esté aprobado.</div>
+        </div>
+
+        <div class="admin-form-layout">
+            <div>
+                <!-- Paso 2: los prestadores asociados -->
+                <section class="panel">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('users', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2 th:text="${providers.size() == 1} ? '1 prestador' : |${providers.size()} prestadores|">Prestadores</h2>
+                            <p>El emprendimiento siempre tiene que tener al menos uno.</p>
+                        </div>
+                    </div>
+                    <ul class="person-list team-list">
+                        <li th:each="provider : ${providers}" th:with="isMe=${provider.id == currentUser.id}">
+                            <span class="initials" th:classappend="${@view.avatarColor(provider.id)}"
+                                  th:text="${@view.initials(provider.fullName)}">AP</span>
+                            <div class="person-list__main">
+                                <strong>
+                                    <span th:text="${provider.fullName}">Nombre Apellido</span>
+                                    <span class="badge badge--approved" th:if="${isMe}">Vos</span>
+                                </strong>
+                                <span class="small" th:text="|${provider.email} · @${provider.username}|">correo · usuario</span>
+                            </div>
+                            <!-- 3a. 3b: con un solo prestador no se ofrece quitar (y el servidor tampoco lo permite) -->
+                            <form th:if="${business.approved and !isMe and providers.size() > 1}" class="inline-form"
+                                  th:action="@{/provider/businesses/{id}/providers/{providerId}/remove(id=${business.id}, providerId=${provider.id})}"
+                                  method="post" th:data-confirm="|¿Quitar a ${provider.fullName} de ${business.legalName}? Ya no va a poder gestionarlo.|">
+                                <button type="submit" class="btn btn--sm btn--ghost btn--danger-text">Quitar</button>
+                            </form>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- 4a: invitaciones a correos sin cuenta, que todavia no se aceptaron -->
+                <section class="panel" th:unless="${invitations.isEmpty()}">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('mail', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2>Invitaciones pendientes</h2>
+                            <p>Todavía no crearon su cuenta. Cada enlace vence a los 7 días.</p>
+                        </div>
+                    </div>
+                    <ul class="person-list team-list">
+                        <li th:each="invitation : ${invitations}">
+                            <span class="initials initials--pending"><svg th:replace="~{fragments/icons :: icon-sized('mail', 'icon--sm')}"></svg></span>
+                            <div class="person-list__main">
+                                <strong th:text="${invitation.email}">correo@ejemplo.com</strong>
+                                <span class="small" th:text="|Invitada el ${#temporals.format(invitation.createdAt, 'dd/MM')} · vence el ${#temporals.format(invitation.expiresAt, 'dd/MM')}|">Invitada el 26/10</span>
+                            </div>
+                            <form class="inline-form" method="post"
+                                  th:action="@{/provider/businesses/{id}/providers/invitations/{invitationId}/cancel(id=${business.id}, invitationId=${invitation.id})}">
+                                <button type="submit" class="btn btn--sm btn--ghost">Cancelar</button>
+                            </form>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
+            <!-- Pasos 3 a 5: sumar por correo -->
+            <section class="panel" th:if="${business.approved}">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('user-plus', '')}"></svg></span>
+                    <div class="panel__title">
+                        <h2>Sumar un prestador</h2>
+                        <p>Escribí el correo de la persona.</p>
+                    </div>
+                </div>
+                <form th:action="@{/provider/businesses/{id}/providers(id=${business.id})}" th:object="${form}" method="post" novalidate>
+                    <div class="panel__body">
+                        <div class="field">
+                            <label for="email">Correo electrónico</label>
+                            <input class="input" type="email" th:field="*{email}" th:errorclass="is-invalid" autocomplete="off"
+                                   placeholder="nombre@correo.com">
+                            <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                        </div>
+                        <ol class="steps team-steps">
+                            <li><strong>Si ya es prestador en Uruguay Mnatural</strong><span>Se suma enseguida y le avisamos por correo.</span></li>
+                            <li><strong>Si no tiene cuenta</strong><span>Le mandamos una invitación para que cree su cuenta de prestador, ya asociada a este emprendimiento.</span></li>
+                            <li><strong>Si es una cuenta de turista</strong><span>No se puede: cada cuenta tiene un único rol.</span></li>
+                        </ol>
+                    </div>
+                    <div class="panel__foot">
+                        <button type="submit" class="btn btn--primary">
+                            <svg th:replace="~{fragments/icons :: icon-sized('user-plus', 'icon--sm')}"></svg> Sumar prestador
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

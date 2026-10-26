@@ -25,29 +25,18 @@
                 vas a poder publicar actividades. Te avisamos por correo.</div>
         </div>
 
-        <!-- Aviso: actividades sin horarios proximos o con el ultimo dentro de menos de runningOutDays dias -->
-        <section class="runout-panel" th:unless="${runningOut.isEmpty()}">
+        <!-- Aviso: actividades sin horarios proximos o con el ultimo dentro de menos de runningOutDays dias.
+             Solo el aviso; la lista de cuales son esta en "Mis actividades" filtrada (?runningOut=true). -->
+        <section class="runout-panel runout-panel--compact" th:unless="${runningOut.isEmpty()}">
             <div class="runout-panel__head">
                 <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('alert', '')}"></svg></span>
                 <div>
                     <h2 th:text="${runningOut.size() == 1} ? 'A 1 actividad se le terminan los horarios' : |A ${runningOut.size()} actividades se les terminan los horarios|">Horarios por terminarse</h2>
                     <p th:text="|Cuando se acaban las fechas, los turistas ya no pueden reservar. Cargá más horarios con tiempo: te avisamos cuando quedan menos de ${runningOutDays} días.|">Texto</p>
                 </div>
+                <a class="btn btn--sm btn--primary" th:href="@{/provider/activities(runningOut=true)}"
+                   th:text="${runningOut.size() == 1} ? 'Ver la actividad' : 'Ver las actividades'">Ver las actividades</a>
             </div>
-            <ul class="runout-list">
-                <li th:each="item : ${runningOut}">
-                    <div class="runout-list__main">
-                        <strong th:text="${item.activity().name}">Actividad</strong>
-                        <span class="small" th:text="${item.activity().business.legalName}">Emprendimiento</span>
-                    </div>
-                    <span class="runout-list__when" th:classappend="${item.hasNoSlots() or item.daysLeft() <= 7} ? 'is-urgent'"
-                          th:text="${item.hasNoSlots()} ? 'Sin horarios próximos'
-                                  : (${item.daysLeft() == 0} ? |Último horario: hoy, ${#temporals.format(item.lastStart(), 'HH:mm')} h|
-                                  : (${item.daysLeft() == 1} ? 'Último horario: mañana'
-                                  : |Último horario en ${item.daysLeft()} días (${#temporals.format(item.lastStart(), 'dd/MM')})|))">Último horario en 12 días</span>
-                    <a class="btn btn--sm btn--primary" th:href="@{/provider/activities/{id}(id=${item.activity().id})}">Cargar horarios</a>
-                </li>
-            </ul>
         </section>
 
         <div class="kpi-grid">

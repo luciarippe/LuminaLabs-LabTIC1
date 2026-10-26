@@ -15,6 +15,11 @@
         <div class="alert alert--error" role="alert" th:if="${param.error}">
             Usuario o contraseña incorrectos.
         </div>
+        <!-- Cuenta bloqueada por un administrador (al intentar entrar, o porque se cerro su sesion) -->
+        <div class="alert alert--error" role="alert" th:if="${param.blocked}">
+            <div>Tu cuenta está <strong>bloqueada</strong>. Revisá el correo que te enviamos con el motivo; si creés que
+                es un error, respondé a ese correo.</div>
+        </div>
         <!-- CU-14 4a: prestador sin emprendimientos aprobados -->
         <div class="alert alert--warning" role="alert" th:if="${param.status}" th:switch="${param.status[0]}">
             <span th:case="'pending'">Tu emprendimiento todavía está <strong>pendiente de aprobación</strong>. Te avisaremos por correo cuando sea revisado.</span>

@@ -2,21 +2,28 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
 <body>
 
-<!-- Imagen de la actividad: su foto de portada, o la de su localidad si no tiene fotos (Activity.coverImageId).
+<!-- Imagen de la actividad: su foto de portada, o la de su departamento si no tiene fotos (ViewHelper.coverImage).
      Si ninguna tiene, un paisaje con un degrade que depende del id. -->
 <div th:fragment="media(activity, label)" class="media" th:classappend="${'media--' + (activity.id % 6)}"
-     th:with="imageId=${activity.coverImageId}">
+     th:with="imageId=${@view.coverImage(activity)}">
     <img class="media__photo" th:if="${imageId != null}" th:src="@{/photos/{id}(id=${imageId})}" th:alt="${activity.name}" loading="lazy">
     <!-- th:if va en un bloque aparte: en el mismo elemento, th:replace se aplica antes que th:if -->
     <th:block th:if="${imageId == null}"><svg th:replace="~{fragments/layout :: landscape('')}"></svg></th:block>
     <span class="media__label" th:if="${label != null}" th:text="${label}">Categoría</span>
 </div>
 
-<!-- Tarjeta del catalogo. "card" es un ActivityCard (actividad + precio desde + proxima fecha). -->
+<!-- Tarjeta del catalogo. "card" es un ActivityCard (actividad + precio desde + proxima fecha + valoracion). -->
 <a th:fragment="card(card)" class="activity-card" th:href="@{/activities/{id}(id=${card.activity.id})}">
     <div th:replace="~{fragments/activity :: media(${card.activity}, ${card.activity.location.name})}"></div>
     <span class="activity-card__category" th:text="${card.activity.mainCategoryName}">Categoría</span>
     <h3 class="activity-card__title" th:text="${card.activity.name}">Nombre de la actividad</h3>
+    <!-- CU-07 paso 4: valoracion promedio (sin valoraciones no se muestra) -->
+    <span class="activity-card__rating" th:if="${card.hasRatings()}" role="img"
+          th:aria-label="|${#numbers.formatDecimal(card.averageRating, 1, 'POINT', 1, 'COMMA')} de 5 estrellas, ${card.ratingCount} valoraciones|">
+        <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--sm')}"></svg>
+        <strong th:text="${#numbers.formatDecimal(card.averageRating, 1, 'POINT', 1, 'COMMA')}">4,5</strong>
+        <span th:text="|(${card.ratingCount})|">(8)</span>
+    </span>
     <div class="activity-card__meta">
         <span>
             <svg th:replace="~{fragments/icons :: icon-sized('clock', 'icon--sm')}"></svg>

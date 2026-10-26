@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Usuarios > Todos los usuarios: las cuentas por rol, con busqueda; cada una lleva a su ficha (admin/user-detail) -->
+<head th:replace="~{fragments/layout :: head('Usuarios')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('users')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Usuarios</span>
+                <h1>Todos los usuarios</h1>
+                <p>Turistas, prestadores y administradores. Entrá a una cuenta para ver su actividad o bloquearla.</p>
+            </div>
+            <a class="btn" th:href="@{/admin/admins/new}">
+                <svg th:replace="~{fragments/icons :: icon-sized('user-plus', 'icon--sm')}"></svg> Nuevo administrador
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section class="panel">
+            <div class="admin-toolbar">
+                <form class="admin-search" th:action="@{/admin/users}" method="get" role="search">
+                    <input type="hidden" name="filter" th:value="${filter}">
+                    <label class="visually-hidden" for="user-search">Buscar usuario</label>
+                    <div class="admin-search__field">
+                        <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg>
+                        <input class="input" type="search" id="user-search" name="q" th:value="${query}"
+                               placeholder="Buscar por nombre, usuario o correo…" maxlength="150">
+                    </div>
+                    <button type="submit" class="btn btn--primary">Buscar</button>
+                    <a class="btn btn--ghost" th:if="${!query.isEmpty()}" th:href="@{/admin/users(filter=${filter})}">Volver al listado</a>
+                </form>
+
+                <nav class="tabs" aria-label="Filtrar por rol">
+                    <a class="tab" th:href="@{/admin/users(q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'ALL'} ? 'is-active'">Todos <span class="tab__count" th:text="${search.all()}">0</span></a>
+                    <a class="tab" th:href="@{/admin/users(filter='TOURISTS', q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'TOURISTS'} ? 'is-active'">Turistas <span class="tab__count" th:text="${search.tourists()}">0</span></a>
+                    <a class="tab" th:href="@{/admin/users(filter='PROVIDERS', q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'PROVIDERS'} ? 'is-active'">Prestadores <span class="tab__count" th:text="${search.providers()}">0</span></a>
+                    <a class="tab" th:href="@{/admin/users(filter='ADMINS', q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'ADMINS'} ? 'is-active'">Administradores <span class="tab__count" th:text="${search.admins()}">0</span></a>
+                    <a class="tab" th:href="@{/admin/users(filter='BLOCKED', q=${query.isEmpty()} ? null : ${query})}"
+                       th:classappend="${filter.name() == 'BLOCKED'} ? 'is-active'">Bloqueados <span class="tab__count" th:text="${search.blocked()}">0</span></a>
+                </nav>
+            </div>
+
+            <div class="admin-results" th:unless="${query.isEmpty()}">
+                <span th:text="${search.users().size() == 1} ? |1 resultado para «${query}»| : |${search.users().size()} resultados para «${query}»|">Resultados</span>
+            </div>
+
+            <div class="table-wrap" th:unless="${search.users().isEmpty()}">
+                <table class="table">
+                    <thead>
+                    <tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="user : ${search.users()}">
+                        <td>
+                            <div class="entity">
+                                <span class="initials" th:classappend="${@view.avatarColor(user.id)}"
+                                      th:text="${@view.initials(user.fullName)}">AP</span>
+                                <div class="entity__text">
+                                    <span class="cell-title" th:text="${user.fullName}">Nombre</span>
+                                    <span class="cell-sub" th:text="|@${user.username}|">@usuario</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td th:text="${user.email}">correo</td>
+                        <td>
+                            <span class="role-chip" th:classappend="${'role-chip--' + #strings.toLowerCase(user.role.name())}"
+                                  th:text="${user.role.name() == 'TOURIST'} ? 'Turista' : (${user.role.name() == 'PROVIDER'} ? 'Prestador' : 'Administrador')">Turista</span>
+                        </td>
+                        <td>
+                            <span class="badge badge--denied" th:if="${user.blocked}">Bloqueada</span>
+                            <span class="badge badge--approved" th:unless="${user.blocked}">Activa</span>
+                        </td>
+                        <td class="cell-actions">
+                            <a class="btn btn--sm" th:href="@{/admin/users/{id}(id=${user.id})}">Ver ficha</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${search.users().isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('users', '')}"></svg></div>
+                <h3>No hay usuarios para mostrar</h3>
+                <p th:text="${query.isEmpty()} ? 'No hay cuentas en esta pestaña.' : 'Ninguna cuenta coincide con la búsqueda.'">Texto</p>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

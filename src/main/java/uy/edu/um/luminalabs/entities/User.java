@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -45,9 +46,39 @@ public abstract class User {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
+    // Cuenta bloqueada por un administrador: no puede iniciar sesion. null = activa.
+    @Column(name = "blocked_at")
+    private LocalDateTime blockedAt;
+
+    @Column(name = "blocked_reason", length = 500)
+    private String blockedReason;
+
     public abstract Role getRole();
 
     public String getFullName() {
         return firstName + " " + lastName;
+    }
+
+    public boolean isBlocked() {
+        return blockedAt != null;
+    }
+
+    public void block(String reason, LocalDateTime now) {
+        if (isBlocked()) {
+            throw new IllegalStateException("La cuenta ya está bloqueada.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("A reason is required to block an account");
+        }
+        blockedAt = now;
+        blockedReason = reason.strip();
+    }
+
+    public void unblock() {
+        if (!isBlocked()) {
+            throw new IllegalStateException("La cuenta no está bloqueada.");
+        }
+        blockedAt = null;
+        blockedReason = null;
     }
 }

@@ -113,6 +113,18 @@ public class Business {
         provider.getBusinesses().add(this);
     }
 
+    // CU-15 3a y 3b: se puede quitar a un prestador, pero el emprendimiento siempre conserva al menos uno
+    public void removeProvider(Provider provider) {
+        if (!hasProvider(provider.getId())) {
+            throw new IllegalStateException("Esa persona no es prestador de este emprendimiento.");
+        }
+        if (providers.size() <= 1) {
+            throw new IllegalStateException("El emprendimiento tiene que conservar al menos un prestador.");
+        }
+        providers.removeIf(current -> Objects.equals(current.getId(), provider.getId()));
+        provider.getBusinesses().remove(this);
+    }
+
     public boolean hasProvider(Long providerId) {
         return providers.stream().anyMatch(provider -> Objects.equals(provider.getId(), providerId));
     }

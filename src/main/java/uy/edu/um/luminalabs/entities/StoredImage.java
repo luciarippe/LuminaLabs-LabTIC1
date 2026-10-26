@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-// Una imagen guardada en la base (foto de una actividad o de una localidad), ya procesada por ImageProcessor.
+// Una imagen guardada en la base (foto de una actividad o de un departamento), ya procesada por ImageProcessor.
 // No se modifica nunca: una foto nueva es otra fila, asi /photos/{id} se puede guardar en cache para siempre.
 @Entity
 @Table(name = "images")

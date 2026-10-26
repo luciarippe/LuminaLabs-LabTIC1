@@ -533,6 +533,9 @@ img { max-width: 100%; display: block; }
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+.activity-card__rating { display: inline-flex; align-items: center; gap: 4px; margin-top: -4px; font-size: .88rem; color: var(--color-muted); }
+.activity-card__rating strong { color: var(--color-ink); }
+.activity-card__rating .icon { fill: var(--color-accent); stroke: var(--color-accent); }
 .activity-card__meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .86rem; color: var(--color-muted); }
 .activity-card__meta span { display: inline-flex; align-items: center; gap: 4px; }
 .activity-card__price { margin-top: auto; font-size: .9rem; color: var(--color-ink-soft); }
@@ -809,7 +812,165 @@ img { max-width: 100%; display: block; }
 .summary-list dt { color: var(--color-muted); }
 .summary-list dd { margin: 0; font-weight: 600; }
 .summary-list__total { padding-top: 10px; border-top: 1px solid var(--color-border); font-size: 1.1rem; }
-.reservation-group { margin-bottom: 20px; }
+
+/* Mis reservas (turista): resumen, pendientes de pago en rojo, proximas en tarjetas e historial */
+.trip-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 28px; }
+.trip-stat { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-muted); font-size: .9rem; }
+.trip-stat strong { display: block; font-size: 1.5rem; line-height: 1.1; color: var(--color-ink); }
+.trip-stat.is-alert { border-color: #f3c6c0; background: var(--color-danger-soft); }
+.trip-stat.is-alert strong { color: var(--color-danger); }
+.trip-stat__icon { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; }
+.trip-stat__icon--green { background: var(--color-primary-soft); color: var(--color-primary); }
+.trip-stat__icon--red { background: var(--color-danger-soft); color: var(--color-danger); }
+.trip-stat.is-alert .trip-stat__icon--red { background: #fff; }
+.trip-stat__icon--navy { background: var(--color-neutral-soft); color: var(--color-ink); }
+
+.trip-pending { margin-bottom: 36px; border: 1px solid #f3c6c0; border-left: 5px solid var(--color-danger); border-radius: var(--radius-lg); background: var(--color-danger-soft); }
+.trip-pending__head { display: flex; gap: 14px; align-items: flex-start; padding: 20px 22px 14px; }
+.trip-pending__head h2 { margin: 0 0 2px; font-size: 1.1rem; color: #7d2117; }
+.trip-pending__head p { margin: 0; font-size: .9rem; color: #9b3b2e; }
+.trip-pending__icon { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: #fff; color: var(--color-danger); }
+.trip-pending__list { list-style: none; margin: 0; padding: 0 14px 14px; display: grid; gap: 10px; }
+.trip-pending__item { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px; border: 1px solid #f6d3ce; border-radius: 12px; background: #fff; }
+.trip-pending__main { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+.trip-pending__main strong { font-size: 1rem; }
+.trip-pending__deadline { font-size: .86rem; font-weight: 600; color: var(--color-danger); }
+.trip-pending__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.trip-pending__amount { font-size: 1.1rem; font-weight: 700; margin-right: 4px; }
+.trip-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .86rem; color: var(--color-muted); }
+
+.trip-thumb { flex-shrink: 0; width: 84px; }
+.trip-thumb .media { aspect-ratio: 1; border-radius: var(--radius); }
+.trip-thumb--sm { width: 52px; }
+
+.trip-section { margin-bottom: 40px; }
+.trip-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.trip-section__head h2 { margin: 0; font-size: 1.3rem; }
+.trip-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 20px 22px; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg); color: var(--color-muted); }
+.trip-empty p { margin: 0; }
+
+.trip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 20px; }
+.trip-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-ink); transition: box-shadow .15s, transform .15s; }
+.trip-card:hover { color: var(--color-ink); text-decoration: none; box-shadow: var(--admin-shadow-hover); transform: translateY(-2px); }
+.trip-card__media { position: relative; }
+.trip-card__media .media { aspect-ratio: 16 / 9; border-radius: 0; }
+.trip-card__date { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; align-items: center; min-width: 50px; padding: 6px 8px; border-radius: var(--radius); background: #fff; font-size: 1.35rem; font-weight: 700; line-height: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }
+.trip-card__date small { margin-top: 3px; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--color-primary); }
+.trip-card__countdown { position: absolute; top: 12px; right: 12px; padding: 5px 11px; border-radius: 999px; background: rgba(26, 43, 73, .85); color: #fff; font-size: .8rem; font-weight: 700; }
+.trip-card__countdown.is-soon { background: var(--color-accent); color: #1a1200; }
+.trip-card__body { flex: 1; padding: 16px 18px 6px; }
+.trip-card__body h3 { margin: 0 0 2px; font-size: 1.08rem; }
+.trip-card__facts { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 7px; font-size: .88rem; color: var(--color-ink-soft); }
+.trip-card__facts li { display: flex; align-items: center; gap: 8px; }
+.trip-card__facts .icon { flex-shrink: 0; color: var(--color-muted); }
+.trip-card__notice { margin: 12px 0 0; padding: 8px 12px; font-size: .84rem; }
+.trip-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--color-border); }
+.trip-card__code { font-size: .82rem; font-weight: 600; color: var(--color-muted); }
+
+.trip-history { list-style: none; margin: 0; padding: 0; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); overflow: hidden; }
+.trip-history li + li { border-top: 1px solid var(--color-border); }
+.trip-history a { display: flex; align-items: center; gap: 14px; padding: 12px 16px; color: var(--color-ink); }
+.trip-history a:hover { background: var(--color-surface-alt); text-decoration: none; color: var(--color-ink); }
+.trip-history__main { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.trip-history__amount { font-weight: 600; white-space: nowrap; }
+.trip-history a > .icon { color: var(--color-muted); }
+.trip-history__rated { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; font-weight: 600; color: var(--color-warning); white-space: nowrap; }
+.trip-history__rated .icon { fill: var(--color-accent); stroke: var(--color-accent); }
+
+/* Pronostico del clima (RF-15) */
+.weather-chip { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; padding: 1px 8px 1px 6px; border-radius: 999px; background: #eef5fb; color: #1d4e89; font-size: .78rem; font-weight: 600; }
+.weather-chip.is-wet { background: #e6eefa; color: #23408e; }
+.weather-chip__rain { display: inline-flex; align-items: center; gap: 1px; margin-left: 2px; font-weight: 500; }
+.weather-chip .icon { width: 14px; height: 14px; }
+.weather-card { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 16px 20px; border: 1px solid #cfe0f1; border-radius: var(--radius-lg); background: linear-gradient(120deg, #f2f8fd, #e8f1fa); }
+.weather-card.is-wet { border-color: #c4d3ee; background: linear-gradient(120deg, #eef2fb, #e2e9f7); }
+.weather-card__icon { display: grid; place-items: center; flex-shrink: 0; width: 56px; height: 56px; border-radius: 16px; background: #fff; color: #1d4e89; box-shadow: 0 1px 3px rgba(16, 24, 40, .08); }
+.weather-card__main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.weather-card__label { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #4a6a8c; }
+.weather-card__main strong { font-size: 1.15rem; }
+.weather-card__details { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .88rem; color: var(--color-ink-soft); }
+.weather-card__details > span { display: inline-flex; align-items: center; gap: 5px; }
+.weather-card__tip { margin-top: 4px; font-size: .86rem; font-weight: 500; color: #23408e; }
+.weather-pending { display: flex; align-items: center; gap: 8px; margin: 0 0 24px; font-size: .88rem; color: var(--color-muted); }
+
+/* Valoraciones (RF-23, CU-08) */
+.stars { position: relative; display: inline-block; line-height: 0; vertical-align: middle; }
+.stars__row { display: inline-flex; gap: 2px; white-space: nowrap; }
+.stars__row .icon { width: 18px; height: 18px; flex-shrink: 0; }
+.stars__row--empty { color: var(--color-border-strong); }
+.stars__row--full { position: absolute; top: 0; left: 0; overflow: hidden; color: var(--color-accent); }
+.stars__row--full .icon { fill: currentColor; }
+
+.trip-rate { margin-bottom: 36px; border: 1px solid #f5d9a8; border-left: 5px solid var(--color-accent); border-radius: var(--radius-lg); background: var(--color-warning-soft); }
+.trip-rate__head { display: flex; gap: 14px; align-items: flex-start; padding: 20px 22px 14px; }
+.trip-rate__head h2 { margin: 0 0 2px; font-size: 1.1rem; color: #6b3f00; }
+.trip-rate__head p { margin: 0; font-size: .9rem; color: #8a5300; }
+.trip-rate .trip-pending__icon { color: var(--color-accent); }
+.trip-rate .trip-pending__item { border-color: #f6e3bd; }
+
+.rate-box { display: grid; gap: 8px; margin-top: 18px; padding: 16px; border-radius: 12px; background: var(--color-warning-soft); border: 1px solid #f5d9a8; }
+.rate-box > span { font-size: .88rem; color: var(--color-ink-soft); }
+.rate-box--done { background: var(--color-surface-alt); border-color: var(--color-border); }
+.rate-box--done p { margin: 0; font-size: .9rem; color: var(--color-ink-soft); white-space: pre-line; }
+
+.rating-page { max-width: 640px; }
+.rating-page__activity { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+.rating-page__activity h1 { margin: 2px 0 4px; font-size: 1.6rem; }
+.rating-page__activity p { margin: 0; }
+.rating-field { border: 0; margin: 0; padding: 0; }
+.rating-field legend { margin-bottom: 8px; padding: 0; font-weight: 600; font-size: .88rem; }
+/* Las estrellas estan de 5 a 1 en el HTML: row-reverse las muestra de 1 a 5 y "~" pinta la elegida y las de su izquierda */
+.star-input { display: inline-flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; }
+.star-input label { cursor: pointer; color: var(--color-border-strong); transition: color .1s, transform .1s; }
+.star-input label .icon { width: 36px; height: 36px; fill: currentColor; }
+.star-input input:checked ~ label,
+.star-input label:hover, .star-input label:hover ~ label { color: var(--color-accent); }
+.star-input label:hover { transform: scale(1.1); }
+.star-input input:focus-visible + label { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 6px; }
+
+.detail-rating { display: inline-flex; align-items: center; gap: 6px; color: var(--color-ink); }
+.detail-rating .icon { fill: var(--color-accent); stroke: var(--color-accent); }
+.detail-rating:hover { color: var(--color-ink); }
+.detail-rating span { color: var(--color-muted); }
+.reviews-empty { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg); color: var(--color-muted); }
+.reviews-empty p { margin: 0; }
+.reviews-summary { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; padding: 20px 22px; margin-bottom: 8px; border-radius: var(--radius-lg); background: var(--color-surface-alt); }
+.reviews-summary__score { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-right: 28px; border-right: 1px solid var(--color-border); }
+.reviews-summary__label { font-size: 1.05rem; font-weight: 700; color: var(--color-primary); }
+.reviews-summary__value { line-height: 1; }
+.reviews-summary__value strong { font-size: 3rem; letter-spacing: -.03em; }
+.reviews-summary__value small { margin-left: 2px; font-size: 1.1rem; font-weight: 600; color: var(--color-muted); }
+.reviews-summary__score .stars__row .icon { width: 22px; height: 22px; }
+.reviews-summary__recommend { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 4px 10px; border-radius: 999px; background: var(--color-success-soft); color: var(--color-success); font-size: .8rem; font-weight: 600; text-align: center; }
+.reviews-summary__bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.reviews-summary__bars li { display: grid; grid-template-columns: 10px 16px 1fr 28px; align-items: center; gap: 6px; font-size: .85rem; color: var(--color-ink-soft); }
+.reviews-summary__bars .icon { fill: var(--color-accent); stroke: var(--color-accent); }
+.reviews-bar { height: 8px; border-radius: 999px; background: var(--color-border); overflow: hidden; }
+.reviews-bar span { display: block; height: 100%; border-radius: inherit; background: var(--color-accent); }
+.reviews-summary__count { text-align: right; color: var(--color-muted); }
+.review-list { list-style: none; margin: 0; padding: 0; }
+.review { display: grid; gap: 8px; padding-block: 22px; border-bottom: 1px solid var(--color-border); }
+.review:last-child { border-bottom: 0; padding-bottom: 0; }
+
+/* Lo que mas destacan: tarjetas con el titular entre comillas y un extracto de la resena */
+.review-highlights { margin: 28px 0 8px; }
+.review-highlights h3, .reviews-all { margin: 0 0 14px; font-size: 1.05rem; }
+.reviews-all { margin-top: 32px; }
+.review-highlights__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 14px; }
+.highlight { position: relative; display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 18px 18px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.highlight::before { content: "\201C"; position: absolute; top: 4px; right: 14px; font-family: Georgia, serif; font-size: 3.6rem; line-height: 1; color: var(--color-primary-soft); }
+.highlight blockquote { flex: 1; margin: 0; }
+.detail-section .highlight p { margin: 0; }
+.highlight .highlight__title { font-weight: 700; color: var(--color-ink); }
+.detail-section .highlight .highlight__excerpt { margin-top: 6px; font-size: .88rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
+.highlight figcaption { display: flex; flex-direction: column; font-size: .82rem; color: var(--color-muted); line-height: 1.35; }
+.highlight figcaption strong { color: var(--color-ink); font-size: .86rem; }
+.reviews-more { margin-top: 4px; }
+.reviews-more summary { cursor: pointer; padding: 12px 0; font-weight: 600; color: var(--color-primary); }
+.review__head { display: flex; align-items: center; gap: 12px; line-height: 1.3; }
+.review__head strong { display: block; }
+.review__title { margin: 2px 0 0; font-size: 1rem; }
+.detail-section .review__comment { margin: 0; }
 .payment-attempts { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-border); }
 .payment-attempts h4 { font-size: .88rem; margin-bottom: 8px; }
 .payment-attempts ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -979,7 +1140,7 @@ img { max-width: 100%; display: block; }
 .auth-card__footer p { margin: 0; }
 
 /* ---------- 8. Espacio del prestador ---------- */
-.business-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+.business-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 20px; }
 .business-card { display: flex; flex-direction: column; gap: 14px; }
 .business-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .business-card h3 { margin: 0; }
@@ -1228,17 +1389,6 @@ img { max-width: 100%; display: block; }
 .photo-status:empty { display: none; }
 .photo-status.is-error { color: var(--color-danger); }
 
-/* Localidades (administracion) */
-.location-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; padding: 18px 22px 22px; }
-.location-card { border: 1px solid var(--admin-line); border-radius: 12px; overflow: hidden; background: #fff; scroll-margin-top: 20px; }
-.location-card__photo { aspect-ratio: 3 / 2; background: var(--color-surface-alt); display: grid; place-items: center; }
-.location-card__photo img { width: 100%; height: 100%; object-fit: cover; }
-.location-card__empty { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--color-muted); }
-.location-card__body { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px 12px; }
-.location-card__body strong { flex: 1 0 100%; font-size: .93rem; }
-.location-card__form { display: inline; margin: 0; }
-.location-card__form label.btn { cursor: pointer; }
-
 /* Redes sociales de un emprendimiento (fragments/social.html) */
 .social-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .social-link {
@@ -1274,15 +1424,114 @@ img { max-width: 100%; display: block; }
 .runout-panel__head .icon-chip { background: #fff; }
 .runout-panel__head h2 { margin: 0 0 2px; font-size: 1rem; color: #6b3f00; }
 .runout-panel__head p { margin: 0; font-size: .86rem; color: #8a5300; }
-.runout-list { list-style: none; margin: 0; padding: 0 12px 12px; }
-.runout-list li { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 10px; border-radius: 10px; background: #fff; border: 1px solid #f6e3bd; }
-.runout-list li + li { margin-top: 8px; }
-.runout-list__main { flex: 1; min-width: 180px; line-height: 1.3; }
-.runout-list__main strong { display: block; font-size: .93rem; }
-.runout-list__main .small { color: var(--color-muted); }
-.runout-list__when { font-size: .85rem; font-weight: 600; color: #8a5300; white-space: nowrap; }
-.runout-list__when.is-urgent { color: var(--color-danger); }
 .runout-badge { margin-top: 4px; }
+/* Usuarios del administrador: el rol de cada cuenta */
+.role-chip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.role-chip--tourist { background: #eef5fb; color: #1d4e89; }
+.role-chip--provider { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+.role-chip--admin { background: #f1ecfa; color: #5b3d99; }
+
+/* Moderacion de valoraciones */
+.moderation-list { list-style: none; margin: 0; padding: 0; }
+.moderation-item { display: grid; gap: 6px; padding: 18px 22px; border-top: 1px solid var(--admin-line); scroll-margin-top: 20px; }
+.moderation-item.is-hidden { background: #fafbfc; }
+.moderation-item.is-hidden .moderation-item__title, .moderation-item.is-hidden .moderation-item__comment { color: var(--color-muted); }
+.moderation-item__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.moderation-item__activity { font-size: .86rem; font-weight: 600; }
+.moderation-item__title { margin: 0; font-size: .98rem; }
+.moderation-item__comment { margin: 0; font-size: .9rem; color: var(--color-ink-soft); white-space: pre-line; }
+.moderation-item__meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .8rem; color: var(--color-muted); }
+.moderation-item__hidden { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: var(--color-neutral-soft); font-size: .86rem; }
+.moderation-item__hide summary { width: fit-content; cursor: pointer; font-size: .86rem; font-weight: 600; color: var(--color-danger); }
+.moderation-item__form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.moderation-item__form .input { flex: 1; min-width: 220px; }
+
+/* Localidades del administrador (CU-10): lista de departamentos y tarjetas de cada localidad */
+.department-row { display: flex; align-items: center; gap: 12px; color: var(--color-ink); }
+.department-row:hover { color: var(--color-primary); text-decoration: none; }
+.department-row__thumb { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; overflow: hidden; border-radius: 10px; background: var(--color-surface-alt); color: var(--color-muted); }
+.department-row__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.department-photo { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; padding: 18px; margin-bottom: 28px; }
+.department-photo__image { flex: 0 0 280px; max-width: 100%; aspect-ratio: 4 / 3; overflow: hidden; display: grid; place-items: center; border-radius: 12px; background: var(--color-surface-alt); }
+.department-photo__image img { width: 100%; height: 100%; object-fit: cover; }
+.department-photo__empty { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--color-muted); }
+.department-photo__actions label.btn { cursor: pointer; }
+.department-photo__body { flex: 1; min-width: 220px; }
+.department-photo__body h2 { margin: 0 0 6px; font-size: 1.05rem; }
+.department-photo__body p { margin: 0 0 14px; font-size: .9rem; color: var(--color-muted); max-width: 520px; }
+.department-photo__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.department-section-title { margin: 0 0 14px; font-size: 1.1rem; }
+
+/* Categorias del administrador (CU-10): la fila que se esta modificando y el formulario fijo al bajar */
+.table tr.is-editing td { background: var(--color-warning-soft); }
+.category-form-panel { position: sticky; top: 24px; align-self: start; }
+
+/* Prestadores de un emprendimiento (CU-15) */
+.admin-eyebrow a { color: inherit; }
+.team-list strong { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.team-list .badge { font-size: .72rem; }
+.initials--pending { background: var(--color-warning-soft); color: var(--color-warning); }
+.team-steps { margin-top: 18px; gap: 12px; font-size: .86rem; }
+.team-steps span { display: block; color: var(--color-muted); }
+.input[readonly] { background: var(--color-surface-alt); color: var(--color-ink-soft); }
+.invitation-invalid { padding: 24px 8px; }
+/* Panel: solo el aviso, con el boton que lleva a la lista */
+.runout-panel--compact .runout-panel__head { align-items: center; flex-wrap: wrap; padding-bottom: 18px; }
+.runout-panel--compact .runout-panel__head > div { flex: 1; min-width: 220px; }
+/* Mis actividades filtrada desde el aviso */
+.filter-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px 16px; border: 1px solid #f3d9a6; border-radius: 12px; background: #fffaf0; color: #8a5300; font-size: .88rem; }
+.filter-banner span { flex: 1; min-width: 200px; }
+.filter-banner a { font-weight: 600; white-space: nowrap; }
+
+/* Reservas del prestador: una tarjeta por horario, el mas cercano primero */
+.resv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 18px; }
+.resv-card { display: flex; flex-direction: column; background: #fff; border: 1px solid var(--admin-line); border-radius: 14px; box-shadow: var(--admin-shadow); }
+.resv-card.is-soon { border-left: 4px solid var(--color-accent); }
+.resv-card__head { display: flex; align-items: flex-start; gap: 14px; padding: 18px 20px 14px; }
+.resv-date { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 56px; padding: 6px 0; border-radius: 10px; background: var(--color-primary-soft); color: var(--color-primary-dark); line-height: 1.1; text-transform: uppercase; }
+.resv-date__weekday, .resv-date__month { font-size: .7rem; font-weight: 600; letter-spacing: .04em; }
+.resv-date__day { font-size: 1.45rem; font-weight: 700; }
+.resv-card__title { flex: 1; min-width: 0; line-height: 1.35; }
+.resv-card__title h2 { margin: 0; font-size: 1rem; }
+.resv-card__title .small { display: block; color: var(--color-muted); }
+.resv-card__when { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: .85rem; color: var(--color-ink-soft); }
+.resv-countdown { flex-shrink: 0; padding: 4px 10px; border-radius: 999px; background: var(--color-neutral-soft); color: var(--color-neutral); font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.resv-card.is-soon .resv-countdown { background: var(--color-warning-soft); color: var(--color-warning); }
+.resv-card__seats { display: flex; flex-direction: column; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--admin-line); }
+.resv-card__seats-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: .9rem; }
+.resv-card__seats-top strong { font-size: 1.15rem; }
+.resv-meter { height: 8px; border-radius: 999px; background: var(--color-neutral-soft); overflow: hidden; }
+.resv-meter span { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); }
+.resv-card__list { padding: 0 20px 12px; }
+.resv-card__list summary { cursor: pointer; font-size: .86rem; font-weight: 600; color: var(--color-primary); }
+.resv-card__list ul { list-style: none; margin: 10px 0 0; padding: 0; }
+.resv-card__list li { border-top: 1px solid var(--admin-line); line-height: 1.3; }
+.resv-card__list li strong { display: block; font-size: .9rem; }
+.resv-card__reservation { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 6px; margin: 0 -6px; border-radius: 8px; color: var(--color-ink); }
+.resv-card__reservation:hover { background: var(--color-surface-alt); color: var(--color-ink); text-decoration: none; }
+.resv-card__foot { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: auto; padding: 12px 20px; border-top: 1px solid var(--admin-line); background: #fafbfc; border-radius: 0 0 14px 14px; }
+.resv-card.is-past { opacity: .85; }
+.resv-card.is-past .resv-date { background: var(--color-neutral-soft); color: var(--color-neutral); }
+
+/* CU-09: filtros de las reservas recibidas */
+.resv-filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr)); gap: 12px 14px; align-items: end; padding: 16px 18px; margin-bottom: 20px; }
+.resv-filters__actions { display: flex; gap: 8px; }
+.resv-filters__hint { grid-column: 1 / -1; margin: -2px 0 0; }
+
+/* CU-09 6a: lista de participantes de un horario (se puede imprimir) */
+.participants-kpis .kpi { cursor: default; }
+.participants-kpis .kpi:hover { transform: none; box-shadow: var(--admin-shadow); }
+.participants-table tr.group-start td { border-top: 2px solid var(--admin-line); }
+.print-only { display: none; }
+.checkbox-box { display: inline-block; width: 16px; height: 16px; border: 1.5px solid var(--color-ink); border-radius: 3px; }
+@media print {
+    .admin-sidebar, .no-print, .site-header, .site-footer { display: none !important; }
+    .admin-shell { display: block; }
+    .admin-main { padding: 0; }
+    .print-only { display: table-cell; }
+    .panel, .kpi { box-shadow: none; }
+    .participants-table a { color: inherit; text-decoration: none; }
+}
 
 /* Rechazados: el motivo se muestra resumido en dos lineas (completo en el detalle y al pasar el mouse) */
 .reason-cell { width: 38%; min-width: 220px; }
@@ -1459,6 +1708,11 @@ img { max-width: 100%; display: block; }
     .activity-grid, .activity-grid--3, .destination-grid { grid-template-columns: 1fr; }
     .form-grid, .option-cards, .data-list, .facts, .social-fields { grid-template-columns: 1fr; }
     .kpi-grid, .info-grid { grid-template-columns: 1fr; }
+    .trip-stats { grid-template-columns: 1fr; gap: 10px; }
+    .trip-history__amount { display: none; }
+    .trip-pending__actions { width: 100%; }
+    .reviews-summary { grid-template-columns: 1fr; gap: 18px; }
+    .reviews-summary__score { padding: 0 0 16px; border-right: 0; border-bottom: 1px solid var(--color-border); }
     .info-item:nth-child(odd) { border-right: 0; }
     .form-section, .auth-card { padding: 22px; }
     .provider-band { grid-template-columns: 1fr; padding: 28px; }

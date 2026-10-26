@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.Period;
 
 // PARTICIPANTS del MER: cada persona que va a la actividad dentro de una reserva (RF-16).
 // La fecha de nacimiento sirve para verificar el requisito de edad (CU-01 3a).
@@ -32,5 +33,14 @@ public class Participant {
         this.firstName = firstName;
         this.lastName = lastName;
         this.birthDate = birthDate;
+    }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+
+    // Edad que va a tener el dia de la actividad (CU-09: para organizar la salida)
+    public int ageOn(LocalDate date) {
+        return Period.between(birthDate, date).getYears();
     }
 }

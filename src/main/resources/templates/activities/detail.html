@@ -25,6 +25,11 @@
             <svg th:replace="~{fragments/icons :: icon-sized('shield', 'icon--sm')}"></svg>
             <span th:text="${activity.business.legalName}">Emprendimiento</span>
         </span>
+        <a class="detail-rating" href="#valoraciones" th:unless="${ratings.isEmpty()}">
+            <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--sm')}"></svg>
+            <strong th:text="${#numbers.formatDecimal(ratings.average(), 1, 'POINT', 1, 'COMMA')}">4,6</strong>
+            <span th:text="${ratings.count() == 1} ? '(1 valoración)' : |(${ratings.count()} valoraciones)|">(12 valoraciones)</span>
+        </a>
         <span class="chip-list">
             <a class="chip" th:each="category : ${activity.categories}"
                th:href="@{/activities(categoryId=${category.id})}" th:text="${category.name}">Categoría</a>
@@ -124,6 +129,93 @@
                     </div>
                 </div>
             </section>
+
+            <!-- RF-23 y CU-08: valoraciones de quienes hicieron la actividad, con el promedio -->
+            <section class="detail-section reviews" id="valoraciones">
+                <h2>Valoraciones</h2>
+                <div class="reviews-empty" th:if="${ratings.isEmpty()}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg>
+                    <p>Todavía no hay valoraciones. Solo quienes participaron de la actividad pueden valorarla.</p>
+                </div>
+
+                <th:block th:unless="${ratings.isEmpty()}">
+                    <!-- Resumen (al estilo GetYourGuide): nota con su palabra, estrellas, cuantas valoraciones,
+                         cuantos la recomiendan y la distribucion por puntaje -->
+                    <div class="reviews-summary">
+                        <div class="reviews-summary__score">
+                            <span class="reviews-summary__label" th:text="${ratings.averageLabel()}">Excelente</span>
+                            <span class="reviews-summary__value">
+                                <strong th:text="${#numbers.formatDecimal(ratings.average(), 1, 'POINT', 1, 'COMMA')}">4,6</strong><small>/5</small>
+                            </span>
+                            <span th:replace="~{fragments/rating :: stars(${ratings.average()})}"></span>
+                            <span class="muted small" th:text="${ratings.count() == 1} ? 'Basado en 1 valoración' : |Basado en ${ratings.count()} valoraciones|">Basado en 12 valoraciones</span>
+                            <span class="reviews-summary__recommend" th:if="${ratings.recommendedPercent() > 0}">
+                                <svg th:replace="~{fragments/icons :: icon-sized('check', 'icon--sm')}"></svg>
+                                <span th:text="|El ${ratings.recommendedPercent()} % la recomienda|">El 92 % la recomienda</span>
+                            </span>
+                        </div>
+                        <ul class="reviews-summary__bars">
+                            <li th:each="n : ${#numbers.sequence(5, 1, -1)}">
+                                <span th:text="${n}">5</span>
+                                <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--sm')}"></svg>
+                                <span class="reviews-bar"><span th:style="|width: ${ratings.percentWith(n)}%|"></span></span>
+                                <span class="reviews-summary__count" th:text="${ratings.countWith(n)}">8</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Lo que mas destacan: los titulares de las valoraciones mas relevantes (ActivityRatings.highlights) -->
+                    <div class="review-highlights" th:unless="${ratings.highlights().isEmpty()}">
+                        <h3>Lo que más destacan</h3>
+                        <div class="review-highlights__grid">
+                            <figure class="highlight" th:each="rating : ${ratings.highlights()}">
+                                <span th:replace="~{fragments/rating :: stars(${rating.stars})}"></span>
+                                <blockquote>
+                                    <p class="highlight__title" th:text="|“${rating.title}”|">“Titular”</p>
+                                    <p class="highlight__excerpt" th:text="${rating.comment}">Comentario</p>
+                                </blockquote>
+                                <figcaption>
+                                    <strong th:text="${rating.authorName}">Ana P.</strong>
+                                    <span th:text="${#temporals.format(rating.reservation.slot.startTime, 'MMMM ''de'' yyyy')}">octubre de 2026</span>
+                                </figcaption>
+                            </figure>
+                        </div>
+                    </div>
+
+                    <h3 class="reviews-all" th:text="|Todas las valoraciones (${ratings.count()})|">Todas las valoraciones (12)</h3>
+                    <!-- Se ven las primeras; el resto, al desplegar -->
+                    <ul class="review-list">
+                        <th:block th:each="rating, iter : ${ratings.ratings()}" th:if="${iter.index < 5}">
+                            <li th:replace="~{:: review(${rating})}"></li>
+                        </th:block>
+                    </ul>
+                    <details class="reviews-more" th:if="${ratings.count() > 5}">
+                        <summary th:text="${ratings.count() - 5 == 1} ? 'Ver 1 valoración más' : |Ver ${ratings.count() - 5} valoraciones más|">Ver más</summary>
+                        <ul class="review-list">
+                            <th:block th:each="rating, iter : ${ratings.ratings()}" th:if="${iter.index >= 5}">
+                                <li th:replace="~{:: review(${rating})}"></li>
+                            </th:block>
+                        </ul>
+                    </details>
+                </th:block>
+
+                <!-- Una valoracion de la lista; se usa en las dos listas de arriba -->
+                <th:block th:if="false">
+                    <li th:fragment="review(rating)" class="review">
+                        <div class="review__head">
+                            <span class="initials initials--round" th:classappend="${@view.avatarColor(rating.reservation.tourist.id)}"
+                                  th:text="${@view.initials(rating.authorName)}">AP</span>
+                            <div>
+                                <strong th:text="${rating.authorName}">Ana P.</strong>
+                                <span class="muted small" th:text="|Participó en ${#temporals.format(rating.reservation.slot.startTime, 'MMMM ''de'' yyyy')}|">Participó en octubre de 2026</span>
+                            </div>
+                        </div>
+                        <span th:replace="~{fragments/rating :: stars(${rating.stars})}"></span>
+                        <h3 class="review__title" th:text="${rating.title}">Titular</h3>
+                        <p class="review__comment" th:text="${rating.comment}">Comentario</p>
+                    </li>
+                </th:block>
+            </section>
         </div>
 
         <!-- Fechas disponibles y reserva -->
@@ -153,6 +245,11 @@
                                 <span class="slot-list__date" th:text="${#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM')}">sábado 12 de octubre</span>
                                 <span class="slot-list__sub"><span class="slot-list__sub-time" th:text="${#temporals.format(slot.startTime, 'HH:mm')} + ' · '">17:30 · </span><span
                                       th:text="${slot.soldOut ? 'Agotado' : (!bookable ? 'Reservas cerradas' : (slot.availability == 1 ? '1 lugar' : slot.availability + ' lugares'))}">12 lugares</span></span>
+                                <!-- RF-15: pronostico del horario, si esta dentro del horizonte -->
+                                <!-- th:if va en un bloque aparte: en el mismo elemento, th:replace se aplica antes que th:if -->
+                                <th:block th:with="forecast=${forecasts.get(slot.startTime)}">
+                                    <th:block th:if="${forecast != null}"><span th:replace="~{fragments/weather :: chip(${forecast})}"></span></th:block>
+                                </th:block>
                             </span>
                         </label>
                         <span class="slot-list__price" th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.900</span>

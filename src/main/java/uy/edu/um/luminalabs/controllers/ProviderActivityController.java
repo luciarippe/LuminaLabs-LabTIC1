@@ -62,15 +62,23 @@ public class ProviderActivityController {
 
     // ---------- Actividades (CU-03) ----------
 
-    // Todas las actividades del prestador, con su proxima fecha y precio "desde"
+    // Todas las actividades del prestador, con su proxima fecha y precio "desde". Con runningOut=true (desde el
+    // aviso del panel) solo las que tienen los horarios por terminarse, primero las mas urgentes.
     @GetMapping
-    public String list(@AuthenticationPrincipal SecurityUser currentUser, Model model) {
+    public String list(@AuthenticationPrincipal SecurityUser currentUser,
+                       @RequestParam(defaultValue = "false") boolean runningOut, Model model) {
         List<Activity> activities = activityService.findActivities(currentUser.getId());
-        model.addAttribute("activities", activities);
+        List<ProviderSlotService.RunningOut> runningOutItems = slotService.findRunningOut(activities);
+        model.addAttribute("activities", runningOut
+                ? runningOutItems.stream().map(ProviderSlotService.RunningOut::activity).toList()
+                : activities);
+        model.addAttribute("runningOutFilter", runningOut);
+        model.addAttribute("totalActivities", activities.size());
+        model.addAttribute("runningOutDays", ProviderSlotService.RUNNING_OUT_DAYS);
         model.addAttribute("summaries", slotService.summarize(activities));
         model.addAttribute("canPublish", !activityService.findPublishableBusinesses(currentUser.getId()).isEmpty());
         // Las que tienen los horarios por terminarse llevan una etiqueta junto a la proxima fecha
-        model.addAttribute("runningOutById", slotService.findRunningOut(activities).stream()
+        model.addAttribute("runningOutById", runningOutItems.stream()
                 .collect(Collectors.toMap(item -> item.activity().getId(), Function.identity())));
         return "provider/activities";
     }

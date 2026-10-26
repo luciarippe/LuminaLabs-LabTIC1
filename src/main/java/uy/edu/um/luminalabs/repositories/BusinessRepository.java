@@ -38,7 +38,8 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
             order by b.createdAt desc""")
     List<Business> search(@Param("text") String text, @Param("digits") String digits);
 
-    @EntityGraph(attributePaths = "locations")
+    // Mis emprendimientos: con sus prestadores (se muestra cuantos tiene cada uno, CU-15)
+    @EntityGraph(attributePaths = {"locations", "providers"})
     List<Business> findDistinctByProviders_IdOrderByCreatedAtDesc(Long providerId);
 
     @EntityGraph(attributePaths = {"locations", "providers"})

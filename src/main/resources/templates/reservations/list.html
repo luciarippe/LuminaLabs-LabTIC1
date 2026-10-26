@@ -1,20 +1,26 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
-<!-- CU-13 pasos 1 a 3: mis reservas, separando proximas y pasadas -->
+<!-- CU-13 pasos 1 a 3: mis reservas. Arriba las pendientes de pago (en rojo), despues las proximas y el historial. -->
 <head th:replace="~{fragments/layout :: head('Mis reservas')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: header(true)}"></header>
 
 <main class="container page">
-    <div class="page-header">
-        <span class="eyebrow">Tu cuenta</span>
-        <h1>Mis reservas</h1>
+    <div class="page-header page-header--actions">
+        <div>
+            <span class="eyebrow">Tu cuenta</span>
+            <h1>Mis reservas</h1>
+            <p>Tus próximas experiencias, lo que te falta pagar y todo lo que ya viviste.</p>
+        </div>
+        <a class="btn btn--primary" th:href="@{/activities}">
+            <svg th:replace="~{fragments/icons :: icon-sized('compass', 'icon--sm')}"></svg> Explorar experiencias
+        </a>
     </div>
 
     <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
     <!-- 2a: todavia no reservo nada -->
-    <div class="card" th:if="${upcoming.isEmpty() and past.isEmpty()}">
+    <div class="card" th:if="${overview.isEmpty()}">
         <div class="empty-state">
             <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
             <h3>Todavía no tenés reservas</h3>
@@ -23,40 +29,157 @@
         </div>
     </div>
 
-    <section th:replace="~{:: group('Próximas', ${upcoming})}"></section>
-    <section th:replace="~{:: group('Pasadas', ${past})}"></section>
-
-    <!-- Tabla de un grupo de reservas; se usa dos veces arriba -->
-    <th:block th:if="false">
-        <section th:fragment="group(title, reservations)" class="card card--flush reservation-group" th:unless="${reservations.isEmpty()}">
-            <div class="card__header"><h3 th:text="${title}">Próximas</h3></div>
-            <div class="table-wrap">
-                <table class="table">
-                    <thead>
-                    <tr><th>Código</th><th>Actividad</th><th>Fecha y hora</th><th>Personas</th><th>Monto</th><th>Estado</th><th></th></tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="reservation : ${reservations}">
-                        <td class="cell-title" th:text="${reservation.code}">R-000001</td>
-                        <td>
-                            <span class="cell-title" th:text="${reservation.slot.activity.name}">Actividad</span>
-                            <span class="cell-sub" th:text="${reservation.slot.activity.business.legalName}">Emprendimiento</span>
-                        </td>
-                        <td th:text="${#temporals.format(reservation.slot.startTime, 'dd/MM/yyyy HH:mm')}">01/11/2026 10:00</td>
-                        <td th:text="${reservation.participantCount}">2</td>
-                        <td th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</td>
-                        <td>
-                            <span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span>
-                            <span class="cell-sub" th:if="${reservation.pendingPayment}"
-                                  th:text="|Pagá antes de las ${#temporals.format(reservation.paymentDeadline, 'HH:mm')}|">Pagá antes de</span>
-                        </td>
-                        <td class="cell-actions">
-                            <a class="btn btn--ghost btn--sm" th:href="@{/reservations/{id}(id=${reservation.id})}">Ver detalle</a>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+    <th:block th:unless="${overview.isEmpty()}">
+        <!-- Resumen -->
+        <div class="trip-stats">
+            <div class="trip-stat">
+                <span class="trip-stat__icon trip-stat__icon--green"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></span>
+                <span><strong th:text="${overview.upcoming().size()}">2</strong> Próximas</span>
             </div>
+            <div class="trip-stat" th:classappend="${!overview.pendingPayment().isEmpty()} ? 'is-alert'">
+                <span class="trip-stat__icon trip-stat__icon--red"><svg th:replace="~{fragments/icons :: icon-sized('alert', '')}"></svg></span>
+                <span><strong th:text="${overview.pendingPayment().size()}">1</strong> Por pagar</span>
+            </div>
+            <div class="trip-stat">
+                <span class="trip-stat__icon trip-stat__icon--navy"><svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg></span>
+                <span><strong th:text="${overview.finishedCount()}">3</strong> Realizadas</span>
+            </div>
+        </div>
+
+        <!-- Pendientes de pago: los lugares estan apartados solo hasta que vence el plazo (RF-18) -->
+        <section class="trip-pending" th:unless="${overview.pendingPayment().isEmpty()}">
+            <div class="trip-pending__head">
+                <span class="trip-pending__icon"><svg th:replace="~{fragments/icons :: icon-sized('alert', '')}"></svg></span>
+                <div>
+                    <h2 th:text="${overview.pendingPayment().size() == 1} ? 'Tenés 1 reserva pendiente de pago' : |Tenés ${overview.pendingPayment().size()} reservas pendientes de pago|">Reservas pendientes de pago</h2>
+                    <p>Te guardamos los lugares por un rato. Si no pagás antes del plazo, la reserva vence y los lugares se liberan.</p>
+                </div>
+            </div>
+            <ul class="trip-pending__list">
+                <li class="trip-pending__item" th:each="reservation : ${overview.pendingPayment()}"
+                    th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}, minutes=${overview.minutesToPay(reservation)}">
+                    <div class="trip-thumb"><div th:replace="~{fragments/activity :: media(${activity}, null)}"></div></div>
+                    <div class="trip-pending__main">
+                        <strong th:text="${activity.name}">Actividad</strong>
+                        <span class="trip-meta">
+                            <span th:text="${#strings.capitalize(#temporals.format(slot.startTime, 'EEE d ''de'' MMMM, HH:mm ''h'''))}">Sáb 1 de noviembre, 10:00 h</span>
+                            <span th:text="${reservation.participantCount == 1} ? '1 persona' : |${reservation.participantCount} personas|">2 personas</span>
+                            <span th:text="${reservation.code}">R-000001</span>
+                        </span>
+                        <span class="trip-pending__deadline" th:if="${minutes > 0}"
+                              th:text="|Pagá antes de las ${#temporals.format(reservation.paymentDeadline, 'HH:mm')} · ${minutes >= 60 ? (minutes / 60) + ' h ' + (minutes % 60) + ' min' : minutes + ' min'} restantes|">Pagá antes de las 12:30 · 1 h 20 min restantes</span>
+                        <span class="trip-pending__deadline" th:if="${minutes == 0}">El plazo para pagar terminó: la reserva va a vencer.</span>
+                    </div>
+                    <div class="trip-pending__actions">
+                        <span class="trip-pending__amount" th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</span>
+                        <a class="btn btn--danger btn--sm" th:if="${minutes > 0}"
+                           th:href="@{/reservations/{id}/pay(id=${reservation.id})}">Pagar ahora</a>
+                        <a class="btn btn--ghost btn--sm" th:href="@{/reservations/{id}(id=${reservation.id})}">Ver detalle</a>
+                    </div>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Proximas: confirmadas, la mas cercana primero -->
+        <section class="trip-section">
+            <div class="trip-section__head">
+                <h2>Próximas experiencias</h2>
+                <span class="muted small" th:unless="${overview.upcoming().isEmpty()}"
+                      th:text="${overview.upcoming().size() == 1} ? '1 reserva confirmada' : |${overview.upcoming().size()} reservas confirmadas|">2 reservas confirmadas</span>
+            </div>
+            <div class="trip-empty" th:if="${overview.upcoming().isEmpty()}">
+                <p th:text="${overview.pendingPayment().isEmpty()} ? 'No tenés experiencias confirmadas por ahora.' : 'Cuando pagues tus reservas pendientes van a aparecer acá.'">Sin próximas</p>
+                <a class="link-arrow" th:href="@{/activities}">Buscar una experiencia
+                    <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></a>
+            </div>
+            <div class="trip-grid" th:unless="${overview.upcoming().isEmpty()}">
+                <a class="trip-card" th:each="reservation : ${overview.upcoming()}"
+                   th:href="@{/reservations/{id}(id=${reservation.id})}"
+                   th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}, days=${overview.daysUntil(reservation)}">
+                    <div class="trip-card__media">
+                        <div th:replace="~{fragments/activity :: media(${activity}, null)}"></div>
+                        <span class="trip-card__date">
+                            <span th:text="${#temporals.format(slot.startTime, 'dd')}">01</span>
+                            <small th:text="${#temporals.format(slot.startTime, 'MMM')}">nov</small>
+                        </span>
+                        <span class="trip-card__countdown" th:classappend="${days <= 1} ? 'is-soon'"
+                              th:text="${days == 0} ? '¡Es hoy!' : (${days == 1} ? 'Mañana' : |Faltan ${days} días|)">Faltan 5 días</span>
+                    </div>
+                    <div class="trip-card__body">
+                        <h3 th:text="${activity.name}">Actividad</h3>
+                        <span class="small muted" th:text="${activity.business.legalName}">Emprendimiento</span>
+                        <ul class="trip-card__facts">
+                            <li><svg th:replace="~{fragments/icons :: icon-sized('clock', 'icon--sm')}"></svg>
+                                <span th:text="${#strings.capitalize(#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM, HH:mm ''h'''))}">Sábado 1 de noviembre, 10:00 h</span></li>
+                            <li><svg th:replace="~{fragments/icons :: icon-sized('pin', 'icon--sm')}"></svg>
+                                <span th:text="|${activity.location.name}, ${activity.location.department.label}|">Localidad</span></li>
+                            <li><svg th:replace="~{fragments/icons :: icon-sized('users', 'icon--sm')}"></svg>
+                                <span th:text="${reservation.participantCount == 1} ? '1 persona' : |${reservation.participantCount} personas|">2 personas</span></li>
+                            <!-- RF-15: pronostico, si la fecha entra en el horizonte -->
+                            <li th:if="${forecasts.containsKey(reservation.id)}" th:with="forecast=${forecasts.get(reservation.id)}">
+                                <svg th:replace="~{fragments/icons :: icon-sized(${forecast.condition.icon}, 'icon--sm')}"></svg>
+                                <span th:text="|${forecast.temperature} °C · ${forecast.condition.label}${forecast.rainProbability != null and forecast.rainProbability >= 20 ? ' · ' + forecast.rainProbability + ' % de lluvia' : ''}|">22 °C · Despejado</span></li>
+                        </ul>
+                        <div class="alert alert--warning trip-card__notice" th:if="${reservation.scheduleChanged}">
+                            <div>El organizador cambió el horario.</div>
+                        </div>
+                    </div>
+                    <div class="trip-card__foot">
+                        <span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span>
+                        <span class="trip-card__code" th:text="${reservation.code}">R-000001</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- CU-08: las terminadas que todavia no valoro -->
+        <section class="trip-rate" th:unless="${toRate.isEmpty()}">
+            <div class="trip-rate__head">
+                <span class="trip-pending__icon"><svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg></span>
+                <div>
+                    <h2 th:text="${toRate.size() == 1} ? '¿Cómo te fue? Tenés 1 experiencia para valorar' : |¿Cómo te fue? Tenés ${toRate.size()} experiencias para valorar|">Experiencias para valorar</h2>
+                    <p>Contale a otros turistas qué te pareció.</p>
+                </div>
+            </div>
+            <ul class="trip-pending__list">
+                <li class="trip-pending__item" th:each="reservation : ${toRate}"
+                    th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}">
+                    <div class="trip-thumb trip-thumb--sm"><div th:replace="~{fragments/activity :: media(${activity}, null)}"></div></div>
+                    <div class="trip-pending__main">
+                        <strong th:text="${activity.name}">Actividad</strong>
+                        <span class="trip-meta">
+                            <span th:text="${#strings.capitalize(#temporals.format(slot.startTime, 'EEE d ''de'' MMMM'))}">Sáb 1 de noviembre</span>
+                            <span th:text="${activity.business.legalName}">Emprendimiento</span>
+                        </span>
+                    </div>
+                    <a class="btn btn--primary btn--sm" th:href="@{/reservations/{id}/rating(id=${reservation.id})}">
+                        <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--sm')}"></svg> Valorar
+                    </a>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Historial: realizadas, canceladas y vencidas, la mas reciente primero -->
+        <section class="trip-section" th:unless="${overview.history().isEmpty()}">
+            <div class="trip-section__head">
+                <h2>Historial</h2>
+            </div>
+            <ul class="trip-history">
+                <li th:each="reservation : ${overview.history()}" th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}">
+                    <a th:href="@{/reservations/{id}(id=${reservation.id})}">
+                        <div class="trip-thumb trip-thumb--sm"><div th:replace="~{fragments/activity :: media(${activity}, null)}"></div></div>
+                        <div class="trip-history__main">
+                            <strong th:text="${activity.name}">Actividad</strong>
+                            <span class="small muted" th:text="|${#temporals.format(slot.startTime, 'dd/MM/yyyy')} · ${activity.location.name} · ${reservation.code}|">01/11/2026 · Localidad · R-000001</span>
+                        </div>
+                        <span class="trip-history__rated" th:if="${ratedIds.contains(reservation.id)}">
+                            <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--sm')}"></svg> Valorada</span>
+                        <span class="trip-history__amount" th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</span>
+                        <span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span>
+                        <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                    </a>
+                </li>
+            </ul>
         </section>
     </th:block>
 </main>

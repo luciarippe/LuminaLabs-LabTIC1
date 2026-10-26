@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Configuracion > Localidades > un departamento (CU-10): sus localidades con su foto y su uso, alta y modificacion
+     en el panel de la derecha (editingId != null = se esta modificando esa) y eliminacion si no esta en uso. -->
+<head th:replace="~{fragments/layout :: head(|Localidades de ${department.label}|)}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('locations')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow"><a th:href="@{/admin/locations}">Localidades</a> / Departamento</span>
+                <h1 th:text="${department.label}">Rocha</h1>
+                <p th:text="${locations.isEmpty()} ? 'Todavía no tiene localidades.'
+                        : (${locations.size() == 1} ? '1 localidad' : |${locations.size()} localidades|)">4 localidades</p>
+            </div>
+            <a class="btn" th:href="@{/admin/locations}">
+                ← Todos los departamentos
+            </a>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <!-- Foto del departamento: la de "Destinos" en la portada y la de sus actividades sin fotos propias -->
+        <section class="panel department-photo">
+            <div class="department-photo__image">
+                <img th:if="${departmentPhotoId != null}" th:src="@{/photos/{id}(id=${departmentPhotoId})}" th:alt="${department.label}">
+                <span class="department-photo__empty" th:if="${departmentPhotoId == null}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('image', '')}"></svg> Sin foto
+                </span>
+            </div>
+            <div class="department-photo__body">
+                <h2 th:text="|Foto de ${department.label}|">Foto del departamento</h2>
+                <p th:text="${departmentPhotoId != null}
+                        ? 'Se ve en Destinos, en la portada, y como imagen de las actividades del departamento que no tienen fotos propias. Elegí una que lo represente; se recorta para que entre en las tarjetas.'
+                        : 'Todavía no tiene: en Destinos de la portada y en las actividades sin fotos propias se ve un paisaje dibujado.'">Texto</p>
+                <div class="department-photo__actions">
+                    <!-- Al elegir el archivo se envia solo (app.js); sin JavaScript, con el boton -->
+                    <form th:action="@{/admin/departments/{d}/photo(d=${department})}" method="post" enctype="multipart/form-data"
+                          class="inline-form" data-auto-upload>
+                        <label class="btn btn--sm btn--primary">
+                            <input type="file" name="photo" accept="image/jpeg,image/png" class="visually-hidden" data-auto-upload-input>
+                            <svg th:replace="~{fragments/icons :: icon-sized('image', 'icon--sm')}"></svg>
+                            <span th:text="${departmentPhotoId == null} ? 'Subir foto' : 'Cambiar foto'">Subir foto</span>
+                        </label>
+                        <noscript><button type="submit" class="btn btn--sm">Guardar</button></noscript>
+                    </form>
+                    <form th:if="${departmentPhotoId != null}" th:action="@{/admin/departments/{d}/photo/delete(d=${department})}"
+                          method="post" class="inline-form" th:attr="data-confirm=|¿Quitar la foto de ${department.label}?|">
+                        <button type="submit" class="btn btn--ghost btn--sm btn--danger-text">Quitar foto</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <h2 class="department-section-title">Localidades</h2>
+
+        <div class="admin-form-layout">
+            <section class="panel">
+                <div class="empty-state" th:if="${locations.isEmpty()}">
+                    <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('pin', '')}"></svg></div>
+                    <h3>Sin localidades</h3>
+                    <p th:text="|Agregá la primera localidad de ${department.label} con el formulario.|">Texto</p>
+                </div>
+
+                <div class="table-wrap" th:unless="${locations.isEmpty()}">
+                    <table class="table">
+                        <thead>
+                        <tr><th>Localidad</th><th>Uso</th><th><span class="visually-hidden">Acciones</span></th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${locations}" th:with="location=${row.location()}" th:id="|location-${location.id}|"
+                            th:classappend="${editingId == location.id} ? 'is-editing'">
+                            <td><span class="cell-title" th:text="${location.name}">Localidad</span></td>
+                            <td class="muted" th:text="${row.usage}">La usan 3 actividades</td>
+                            <td class="cell-actions">
+                                <a class="btn btn--sm" th:href="@{/admin/locations/{d}(d=${department}, edit=${location.id})}">
+                                    <svg th:replace="~{fragments/icons :: icon-sized('edit', 'icon--sm')}"></svg> Modificar
+                                </a>
+                                <!-- 6b: en uso no se puede eliminar (el servidor tambien lo controla y avisa cuantos la usan) -->
+                                <form class="inline-form" method="post" th:action="@{/admin/locations/{id}/delete(id=${location.id})}"
+                                      th:attr="data-confirm=|¿Eliminar ${location.name}?|">
+                                    <button type="submit" class="btn btn--sm btn--ghost btn--danger-text" th:disabled="${row.inUse}"
+                                            th:title="${row.inUse} ? |No se puede eliminar: ${#strings.toLowerCase(row.usage)}| : 'Eliminar'">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Alta o modificacion -->
+            <section class="panel category-form-panel">
+                <div class="panel__head">
+                    <span class="icon-chip" th:classappend="${editingId == null} ? 'icon-chip--green' : 'icon-chip--amber'">
+                        <svg th:replace="~{fragments/icons :: icon-sized(${editingId == null ? 'pin' : 'edit'}, '')}"></svg>
+                    </span>
+                    <div class="panel__title">
+                        <h2 th:text="${editingId == null} ? 'Nueva localidad' : 'Modificar localidad'">Nueva localidad</h2>
+                        <p th:text="${editingId == null} ? |Se agrega en ${department.label}.| : 'El cambio se ve en todas las actividades y emprendimientos que la usan.'">Texto</p>
+                    </div>
+                </div>
+                <form th:action="${editingId == null} ? @{/admin/locations} : @{/admin/locations/{id}(id=${editingId})}"
+                      th:object="${form}" method="post" novalidate>
+                    <div class="panel__body form-stack">
+                        <div class="field">
+                            <label for="name">Nombre</label>
+                            <input class="input" type="text" th:field="*{name}" th:errorclass="is-invalid" maxlength="80"
+                                   placeholder="Ej.: Barra de Valizas">
+                            <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+                        </div>
+                        <!-- Al agregar, el departamento es este; al modificar se puede mover a otro (si se cargo mal) -->
+                        <input type="hidden" th:if="${editingId == null}" th:field="*{department}">
+                        <div class="field" th:if="${editingId != null}">
+                            <label for="department">Departamento</label>
+                            <select class="select" th:field="*{department}" th:errorclass="is-invalid">
+                                <option th:each="option : ${departments}" th:value="${option}" th:text="${option.label}">Rocha</option>
+                            </select>
+                            <span class="field-error" th:if="${#fields.hasErrors('department')}" th:errors="*{department}"></span>
+                        </div>
+                    </div>
+                    <div class="panel__foot">
+                        <a class="btn btn--ghost" th:if="${editingId != null}" th:href="@{/admin/locations/{d}(d=${department})}">Cancelar</a>
+                        <button type="submit" class="btn btn--primary"
+                                th:text="${editingId == null} ? 'Agregar localidad' : 'Guardar cambios'">Agregar localidad</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

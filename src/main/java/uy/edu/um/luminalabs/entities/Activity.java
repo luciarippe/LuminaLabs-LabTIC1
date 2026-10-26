@@ -145,12 +145,10 @@ public class Activity {
         }
     }
 
-    // Imagen de portada: la primera foto, o la de la localidad si la actividad no tiene; null si ninguna tiene
+    // Imagen de portada: la primera foto; null si la actividad no tiene fotos (en ese caso las plantillas usan la
+    // foto del departamento, ver ViewHelper.coverImage)
     public Long getCoverImageId() {
-        if (!photos.isEmpty()) {
-            return photos.getFirst().getImageId();
-        }
-        return location == null ? null : location.getPhotoId();
+        return photos.isEmpty() ? null : photos.getFirst().getImageId();
     }
 
     // CU-01 3a: la edad se cuenta al dia de la actividad, no al dia en que se reserva

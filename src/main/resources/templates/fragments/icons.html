@@ -38,6 +38,19 @@
         <g th:case="'pause'"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></g>
         <g th:case="'refresh'"><path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/></g>
         <g th:case="'file-text'"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></g>
+        <!-- Clima (WeatherCondition.icon) -->
+        <g th:case="'sun'"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></g>
+        <g th:case="'cloud-sun'"><path d="M8 3.5v1.3M3.3 8.5h1.3M4.6 5.1l.9.9M11.4 5.1l-.9.9"/><path d="M5.6 10.6a3 3 0 0 1 5.3-2.5"/><path d="M8 20h9a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.4 1.6A3.2 3.2 0 0 0 8 20z"/></g>
+        <g th:case="'cloud'"><path d="M7 19h10a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.4 1.6A3.7 3.7 0 0 0 7 19z"/></g>
+        <g th:case="'rain'"><path d="M7 15h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.4 1.6A3.2 3.2 0 0 0 7 15z"/><path d="m8 18-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/></g>
+        <g th:case="'storm'"><path d="M7 15h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.4 1.6A3.2 3.2 0 0 0 7 15z"/><path d="m12.5 15-2 3.5h3l-2 3.5"/></g>
+        <g th:case="'fog'"><path d="M7 12h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.4 1.6"/><path d="M3 15h18M5 18.5h14M8 22h8"/></g>
+        <g th:case="'snow'"><path d="M7 15h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.4 1.6A3.2 3.2 0 0 0 7 15z"/><path d="M8 19h.01M12 19h.01M16 19h.01M10 21.5h.01M14 21.5h.01"/></g>
+        <g th:case="'droplet'"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></g>
+        <g th:case="'wind'"><path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h7"/></g>
+        <g th:case="'tag'"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></g>
+        <g th:case="'edit'"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></g>
+        <g th:case="'ticket'"><path d="M3 8a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.5a1.5 1.5 0 0 0 0 3V16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2.5a1.5 1.5 0 0 0 0-3z"/><path d="M14 7v10" stroke-dasharray="2 2"/></g>
         <g th:case="'chevron-right'"><path d="m9 6 6 6-6 6"/></g>
         <g th:case="'image'"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-5-5-9 9"/></g>
         <g th:case="'instagram'"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.3 6.7h.01"/></g>

@@ -16,7 +16,8 @@ import java.util.Optional;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     // CU-13: reservas del turista con lo que muestra el listado, en una sola consulta
-    @EntityGraph(attributePaths = {"slot", "slot.activity", "slot.activity.business"})
+    @EntityGraph(attributePaths = {"slot", "slot.activity", "slot.activity.business", "slot.activity.location",
+            "slot.activity.photos"})
     List<Reservation> findByTourist_IdOrderBySlot_StartTimeAsc(Long touristId);
 
     // CU-13 paso 5: detalle completo de una reserva
@@ -42,6 +43,29 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     // CU-04 5a y 5b: reservas que todavia ocupan lugares en un slot
     @EntityGraph(attributePaths = "tourist")
     List<Reservation> findBySlot_IdAndStatusIn(Long slotId, Collection<ReservationStatus> statuses);
+
+    // CU-09 pasos 2 a 4: reservas de las actividades del prestador con horario en [from, to), en los estados
+    // pedidos, opcionalmente de un emprendimiento o de una actividad (null = todos). Ordenadas por el inicio del
+    // horario y, dentro del horario, por cuando se hicieron.
+    @Query("""
+            select r from Reservation r join fetch r.tourist join fetch r.slot s join fetch s.activity a
+            join fetch a.business b join b.providers p
+            where p.id = :providerId and r.status in :statuses and s.startTime >= :from and s.startTime < :to
+              and (:businessId is null or b.id = :businessId) and (:activityId is null or a.id = :activityId)
+            order by s.startTime asc, r.createdAt asc""")
+    List<Reservation> findForProvider(Long providerId, Long businessId, Long activityId, LocalDateTime from,
+                                      LocalDateTime to, Collection<ReservationStatus> statuses);
+
+    // CU-09 2a: si el prestador ya recibio alguna reserva (para distinguir "todavia no hay" de "no coincide")
+    @Query("""
+            select count(r) > 0 from Reservation r join r.slot s join s.activity a join a.business b join b.providers p
+            where p.id = :providerId""")
+    boolean existsForProvider(Long providerId);
+
+    // CU-09 6a: reservas de un horario con sus participantes, para la lista consolidada
+    @EntityGraph(attributePaths = {"tourist", "participants"})
+    List<Reservation> findWithParticipantsBySlot_IdAndStatusInOrderByCreatedAtAsc(Long slotId,
+                                                                                   Collection<ReservationStatus> statuses);
 
     // CU-11 pasos 3 y 8: reservas vigentes (slot que no empezo) de las actividades de un emprendimiento
     @EntityGraph(attributePaths = {"tourist", "slot"})

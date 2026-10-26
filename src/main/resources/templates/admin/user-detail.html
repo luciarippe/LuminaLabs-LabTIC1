@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Ficha de un usuario: sus datos, lo que tiene segun su rol y bloquear / desbloquear la cuenta -->
+<head th:replace="~{fragments/layout :: head(${detail.user().fullName})}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('users')}"></aside>
+
+    <main class="admin-main" th:with="user=${detail.user()},
+            roleLabel=${detail.user().role.name() == 'TOURIST'} ? 'Turista' : (${detail.user().role.name() == 'PROVIDER'} ? 'Prestador' : 'Administrador')">
+        <div class="breadcrumb">
+            <a th:href="@{/admin/users}">Usuarios</a> / <span th:text="${user.fullName}">Nombre</span>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <section class="panel entity-hero">
+            <span class="initials initials--lg" th:classappend="${@view.avatarColor(user.id)}"
+                  th:text="${@view.initials(user.fullName)}">AP</span>
+            <div class="entity-hero__main">
+                <h1 th:text="${user.fullName}">Nombre</h1>
+                <div class="entity-hero__meta">
+                    <span><svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> <span th:text="|@${user.username}|">@usuario</span></span>
+                    <span><svg th:replace="~{fragments/icons :: icon-sized('mail', 'icon--sm')}"></svg> <span th:text="${user.email}">correo</span></span>
+                    <span><svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg>
+                        <span th:text="|Nació el ${#temporals.format(user.birthDate, 'dd/MM/yyyy')}|">Nacimiento</span></span>
+                </div>
+            </div>
+            <span class="role-chip" th:classappend="${'role-chip--' + #strings.toLowerCase(user.role.name())}" th:text="${roleLabel}">Turista</span>
+            <span class="badge badge--denied" th:if="${user.blocked}">Bloqueada</span>
+            <span class="badge badge--approved" th:unless="${user.blocked}">Activa</span>
+        </section>
+
+        <!-- Bloqueada: desde cuando y por que (lo mismo que se le envio por correo) -->
+        <section class="denial-callout" th:if="${user.blocked}">
+            <span class="icon-chip icon-chip--red"><svg th:replace="~{fragments/icons :: icon-sized('lock', '')}"></svg></span>
+            <div>
+                <h2>Por qué está bloqueada</h2>
+                <p class="denial-callout__date" th:text="|Bloqueada el ${#temporals.format(user.blockedAt, 'dd/MM/yyyy ''a las'' HH:mm')}. Este motivo se le envió por correo.|">Fecha</p>
+                <p class="denial-callout__reason" th:text="${user.blockedReason}">Motivo</p>
+            </div>
+        </section>
+
+        <div class="admin-detail-layout">
+            <div>
+                <!-- Prestador: sus emprendimientos -->
+                <section class="panel" th:if="${user.role.name() == 'PROVIDER'}">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('building', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2>Emprendimientos</h2>
+                            <p th:text="${detail.businesses().size() == 1} ? 'Es prestador de 1 emprendimiento.' : |Es prestador de ${detail.businesses().size()} emprendimientos.|">Texto</p>
+                        </div>
+                    </div>
+                    <ul class="person-list">
+                        <li th:each="business : ${detail.businesses()}">
+                            <span class="initials" th:classappend="${@view.avatarColor(business.id)}" th:text="${@view.initials(business.legalName)}">CE</span>
+                            <div class="person-list__main">
+                                <strong th:text="${business.legalName}">Emprendimiento</strong>
+                                <span class="small" th:text="|${business.type.identifierLabel} ${business.identifier}|">RUT</span>
+                            </div>
+                            <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}" th:text="${business.status.label}">Aprobado</span>
+                            <a class="btn btn--sm" th:href="@{/admin/businesses/{id}(id=${business.id})}">Ver</a>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- Turista: sus reservas (la mas reciente primero) -->
+                <section class="panel" th:if="${user.role.name() == 'TOURIST'}">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('ticket', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2>Reservas</h2>
+                            <p th:text="${detail.reservations().size() == 1} ? '1 reserva' : |${detail.reservations().size()} reservas|">Texto</p>
+                        </div>
+                    </div>
+                    <div class="table-wrap" th:unless="${detail.reservations().isEmpty()}">
+                        <table class="table">
+                            <thead><tr><th>Reserva</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr></thead>
+                            <tbody>
+                            <tr th:each="reservation : ${detail.reservations()}">
+                                <td>
+                                    <span class="cell-title" th:text="${reservation.slot.activity.name}">Actividad</span>
+                                    <span class="cell-sub" th:text="|${reservation.code} · ${reservation.participantCount == 1 ? '1 persona' : reservation.participantCount + ' personas'}|">R-000001</span>
+                                </td>
+                                <td class="nowrap" th:text="${#temporals.format(reservation.slot.startTime, 'dd/MM/yyyy HH:mm')}">01/11/2026</td>
+                                <td class="nowrap" th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</td>
+                                <td><span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="panel__body muted" th:if="${detail.reservations().isEmpty()}">Todavía no hizo reservas.</p>
+                </section>
+
+                <!-- Turista: sus valoraciones -->
+                <section class="panel" th:if="${user.role.name() == 'TOURIST' and !detail.ratings().isEmpty()}">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2>Valoraciones</h2>
+                            <p>Las que escribió. Se moderan desde Contenido &gt; Valoraciones.</p>
+                        </div>
+                    </div>
+                    <ul class="person-list">
+                        <li th:each="rating : ${detail.ratings()}">
+                            <div class="person-list__main">
+                                <strong th:text="|${rating.title} · ${rating.activity.name}|">Titular · Actividad</strong>
+                                <span class="small"><span th:replace="~{fragments/rating :: stars(${rating.stars})}"></span></span>
+                            </div>
+                            <span class="badge badge--suspended" th:if="${rating.hidden}">Oculta</span>
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="panel" th:if="${user.role.name() == 'ADMIN'}">
+                    <div class="panel__body muted">Es administrador de la plataforma: puede revisar emprendimientos, gestionar
+                        usuarios, moderar valoraciones y mantener categorías y localidades.</div>
+                </section>
+            </div>
+
+            <!-- Bloquear o desbloquear -->
+            <aside class="panel action-panel">
+                <div class="panel__head">
+                    <span class="icon-chip" th:classappend="${user.blocked} ? 'icon-chip--green' : 'icon-chip--red'">
+                        <svg th:replace="~{fragments/icons :: icon-sized(${user.blocked ? 'key' : 'lock'}, '')}"></svg>
+                    </span>
+                    <div class="panel__title"><h2 th:text="${user.blocked} ? 'Desbloquear la cuenta' : 'Bloquear la cuenta'">Bloquear</h2></div>
+                </div>
+                <div class="panel__body">
+                    <p class="muted small" th:if="${isMe}">Esta es tu cuenta: no podés bloquearla.</p>
+
+                    <form th:if="${!isMe and !user.blocked}" th:action="@{/admin/users/{id}/block(id=${user.id})}" method="post"
+                          class="form-stack" th:attr="data-confirm=|¿Bloquear la cuenta de ${user.fullName}? No va a poder iniciar sesión.|">
+                        <p class="muted small">No va a poder iniciar sesión y se cierran las sesiones que tenga abiertas.
+                            Sus datos, reservas y valoraciones no se borran: se puede desbloquear cuando quieras.</p>
+                        <p class="muted small" th:if="${user.role.name() == 'PROVIDER'}">Sus emprendimientos y actividades siguen
+                            publicados; si hay que sacarlos del portal, suspendé el emprendimiento.</p>
+                        <div class="field">
+                            <label for="reason">Motivo</label>
+                            <textarea class="textarea" id="reason" name="reason" rows="3" maxlength="500" required
+                                      placeholder="Se lo enviamos por correo a la persona."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn--danger btn--block">Bloquear cuenta</button>
+                    </form>
+
+                    <form th:if="${user.blocked}" th:action="@{/admin/users/{id}/unblock(id=${user.id})}" method="post" class="form-stack">
+                        <p class="muted small">Va a poder iniciar sesión otra vez. Le avisamos por correo.</p>
+                        <button type="submit" class="btn btn--primary btn--block">Desbloquear cuenta</button>
+                    </form>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

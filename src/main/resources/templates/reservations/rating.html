@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-08 pasos 2 y 3: valorar una reserva terminada con estrellas, un titular y la resena -->
+<head th:replace="~{fragments/layout :: head('Valorar experiencia')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header(true)}"></header>
+
+<main class="container page" th:with="slot=${reservation.slot}, activity=${reservation.slot.activity}">
+    <div class="breadcrumb">
+        <a th:href="@{/reservations}">Mis reservas</a> /
+        <a th:href="@{/reservations/{id}(id=${reservation.id})}" th:text="${reservation.code}">R-000001</a> /
+        <span>Valorar</span>
+    </div>
+
+    <div class="rating-page">
+        <div class="rating-page__activity">
+            <div class="trip-thumb"><div th:replace="~{fragments/activity :: media(${activity}, null)}"></div></div>
+            <div>
+                <span class="eyebrow">Valorá tu experiencia</span>
+                <h1 th:text="${activity.name}">Actividad</h1>
+                <p class="muted" th:text="|${activity.business.legalName} · ${#temporals.format(slot.startTime, 'd ''de'' MMMM ''de'' yyyy')}|">Emprendimiento · 1 de noviembre de 2026</p>
+            </div>
+        </div>
+
+        <form class="card form-stack" th:action="@{/reservations/{id}/rating(id=${reservation.id})}" th:object="${form}"
+              method="post" novalidate>
+            <fieldset class="field rating-field">
+                <legend>¿Cómo la calificarías?</legend>
+                <!-- Las estrellas van de 5 a 1 en el HTML y se dan vuelta con CSS (row-reverse): asi "la marcada y las
+                     anteriores" se pintan con el selector ~, que solo mira hacia adelante -->
+                <div class="star-input">
+                    <th:block th:each="n : ${#numbers.sequence(5, 1, -1)}">
+                        <input type="radio" class="visually-hidden" name="stars" th:id="|stars-${n}|" th:value="${n}"
+                               th:checked="${form.stars == n}">
+                        <label th:for="|stars-${n}|" th:title="${n == 1} ? '1 estrella' : |${n} estrellas|">
+                            <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--lg')}"></svg>
+                            <span class="visually-hidden" th:text="${n == 1} ? '1 estrella' : |${n} estrellas|">5 estrellas</span>
+                        </label>
+                    </th:block>
+                </div>
+                <span class="hint">1 estrella: muy mala · 5 estrellas: excelente</span>
+                <span class="field-error" th:if="${#fields.hasErrors('stars')}" th:errors="*{stars}"></span>
+            </fieldset>
+
+            <div class="field">
+                <label for="title">Titular</label>
+                <input class="input" type="text" th:field="*{title}" th:errorclass="is-invalid" maxlength="100"
+                       placeholder="Ej.: Un atardecer que no me voy a olvidar">
+                <span class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
+            </div>
+
+            <div class="field">
+                <label for="comment">Contanos cómo fue</label>
+                <textarea class="textarea" th:field="*{comment}" th:errorclass="is-invalid" maxlength="1000" rows="6"
+                          placeholder="Qué te gustó, cómo fue el guía, qué le recomendarías a otros turistas."></textarea>
+                <span class="hint">Hasta 1000 caracteres.</span>
+                <span class="field-error" th:if="${#fields.hasErrors('comment')}" th:errors="*{comment}"></span>
+            </div>
+
+            <div class="alert alert--info">
+                <div>Tu valoración se publica en la página de la actividad con tu nombre y la inicial de tu apellido.
+                    Solo podés valorar cada reserva una vez.</div>
+            </div>
+
+            <div class="form-actions">
+                <a class="btn btn--ghost" th:href="@{/reservations/{id}(id=${reservation.id})}">Volver</a>
+                <button type="submit" class="btn btn--primary">Publicar valoración</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

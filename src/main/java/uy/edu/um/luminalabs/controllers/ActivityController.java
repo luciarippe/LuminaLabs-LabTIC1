@@ -13,6 +13,8 @@ import uy.edu.um.luminalabs.entities.Department;
 import uy.edu.um.luminalabs.entities.Slot;
 import uy.edu.um.luminalabs.services.ActivityCatalogService;
 import uy.edu.um.luminalabs.services.LocationService;
+import uy.edu.um.luminalabs.services.RatingService;
+import uy.edu.um.luminalabs.services.WeatherService;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -27,6 +29,8 @@ public class ActivityController {
 
     private final ActivityCatalogService catalogService;
     private final LocationService locationService;
+    private final RatingService ratingService;
+    private final WeatherService weatherService;
     private final Clock clock;
 
     @GetMapping
@@ -46,6 +50,11 @@ public class ActivityController {
         model.addAttribute("slots", slots);
         model.addAttribute("fromPrice", slots.stream().map(Slot::getPrice).min(Comparator.naturalOrder()).orElse(null));
         model.addAttribute("now", LocalDateTime.now(clock));
+        model.addAttribute("ratings", ratingService.findForActivity(id));
+        // CU-07 paso 8: pronostico de los horarios dentro del horizonte (clave: inicio del horario). Vacio si la
+        // API no responde (8a).
+        model.addAttribute("forecasts", weatherService.forecastFor(activity.getLocation(),
+                slots.stream().map(Slot::getStartTime).toList()));
         return "activities/detail";
     }
 }

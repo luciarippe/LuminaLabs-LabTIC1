@@ -33,6 +33,10 @@
         <a th:href="@{/provider/activities/new}" th:classappend="${active == 'activity-new'} ? 'is-active'">
             <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg> Nueva actividad
         </a>
+        <span class="admin-nav__label">Reservas</span>
+        <a th:href="@{/provider/reservations}" th:classappend="${active == 'reservations'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('ticket', 'icon--sm')}"></svg> Reservas
+        </a>
         <span class="admin-nav__label">Cuenta</span>
         <a th:href="@{/provider/account}" th:classappend="${active == 'account'} ? 'is-active'">
             <svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg> Mi cuenta

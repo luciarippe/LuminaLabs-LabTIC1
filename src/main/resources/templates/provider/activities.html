@@ -20,6 +20,13 @@
 
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
+        <!-- Filtro desde el aviso del panel: solo las que tienen los horarios por terminarse, la mas urgente primero -->
+        <div class="filter-banner" th:if="${runningOutFilter}">
+            <svg th:replace="~{fragments/icons :: icon-sized('alert', 'icon--sm')}"></svg>
+            <span th:text="|Estás viendo solo las actividades sin horarios próximos o con el último dentro de menos de ${runningOutDays} días. Entrá a cada una para cargar más fechas.|">Filtro</span>
+            <a th:href="@{/provider/activities}" th:text="|Ver todas (${totalActivities})|">Ver todas</a>
+        </div>
+
         <section class="panel">
             <div class="admin-toolbar" th:unless="${activities.isEmpty()}">
                 <div class="admin-search">
@@ -65,7 +72,9 @@
                         </td>
                         <td class="nowrap" th:text="${summary != null} ? |$ ${#numbers.formatDecimal(summary.fromPrice, 1, 'POINT', 0, 'COMMA')}| : '—'">$ 1.500</td>
                         <td class="cell-actions">
-                            <a class="btn btn--sm" th:href="@{/provider/activities/{id}(id=${activity.id})}">Gestionar</a>
+                            <a class="btn btn--sm" th:classappend="${runningOutFilter} ? 'btn--primary'"
+                               th:href="@{/provider/activities/{id}(id=${activity.id})}"
+                               th:text="${runningOutFilter} ? 'Cargar horarios' : 'Gestionar'">Gestionar</a>
                         </td>
                     </tr>
                     </tbody>
@@ -77,7 +86,15 @@
                 </div>
             </div>
 
-            <div class="empty-state" th:if="${activities.isEmpty()}">
+            <!-- Filtro sin resultados: ya cargo horarios en todas -->
+            <div class="empty-state" th:if="${activities.isEmpty() and runningOutFilter}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('check', '')}"></svg></div>
+                <h3>Todas tus actividades tienen horarios</h3>
+                <p>Ninguna se está quedando sin fechas para reservar.</p>
+                <a class="btn btn--sm" th:href="@{/provider/activities}">Ver todas las actividades</a>
+            </div>
+
+            <div class="empty-state" th:if="${activities.isEmpty() and !runningOutFilter}">
                 <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></div>
                 <h3>Todavía no publicaste actividades</h3>
                 <p th:text="${canPublish} ? 'Publicá tu primera actividad y después cargale fechas, horarios y precios.' : 'Vas a poder publicar actividades cuando tengas un emprendimiento aprobado.'">Texto</p>

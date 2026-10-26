@@ -26,6 +26,13 @@
             la reserva con devolución total.</div>
     </div>
 
+    <!-- RF-15: pronostico para la fecha y el lugar, si la reserva esta vigente y entra en el horizonte -->
+    <th:block th:if="${forecast != null}"><div th:replace="~{fragments/weather :: card(${forecast})}"></div></th:block>
+    <p class="weather-pending" th:if="${forecast == null and reservation.active and reservation.isUpcoming(now)}">
+        <svg th:replace="~{fragments/icons :: icon-sized('cloud-sun', 'icon--sm')}"></svg>
+        <span th:text="|El pronóstico del clima va a aparecer acá cuando falten ${forecastDays} días o menos.|">Pronóstico</span>
+    </p>
+
     <div class="admin-detail-layout">
         <div>
             <section class="card">
@@ -108,6 +115,28 @@
             <!-- 6b: cancelada, vencida o terminada: se muestra como historico -->
             <p class="muted small" th:if="${reservation.status.name() == 'CONFIRMED'}">Tu pago fue aprobado. ¡Que lo disfrutes!</p>
             <p class="muted small" th:if="${reservation.status.name() == 'EXPIRED'}">Venció sin pago: no se te cobró nada y los lugares se liberaron.</p>
+
+            <!-- CU-08: terminada. Sin valorar se ofrece hacerlo (1a: si no termino, no aparece); valorada, se muestra -->
+            <div class="rate-box" th:if="${reservation.status.name() == 'FINISHED' and rating == null}">
+                <strong>¿Cómo estuvo la experiencia?</strong>
+                <span>Tu opinión ayuda a otros turistas a elegir.</span>
+                <a class="btn btn--primary btn--block" th:href="@{/reservations/{id}/rating(id=${reservation.id})}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--sm')}"></svg> Valorar la experiencia
+                </a>
+            </div>
+            <div class="rate-box rate-box--done" th:if="${rating != null}">
+                <span class="muted small">Tu valoración</span>
+                <span th:replace="~{fragments/rating :: stars(${rating.stars})}"></span>
+                <strong th:text="${rating.title}">Titular</strong>
+                <p th:text="${rating.comment}">Comentario</p>
+                <!-- Moderacion: un administrador la oculto -->
+                <div class="alert alert--warning" th:if="${rating.hidden}">
+                    <div>Un administrador ocultó esta valoración: no se muestra en la actividad.
+                        <strong>Motivo:</strong> <span th:text="${rating.hiddenReason}">Motivo</span></div>
+                </div>
+                <a class="link-arrow small" th:unless="${rating.hidden}" th:href="@{/activities/{id}#valoraciones(id=${activity.id})}">Verla publicada
+                    <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></a>
+            </div>
 
             <!-- RF-19: datos de la cancelacion y estado de la devolucion -->
             <div class="reason-box cancellation-box" th:if="${cancellation != null}">

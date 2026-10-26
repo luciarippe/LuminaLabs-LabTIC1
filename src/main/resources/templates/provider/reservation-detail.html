@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-09 paso 6: detalle de una reserva recibida. Quien reservo, cada participante (nombre, apellido, fecha de
+     nacimiento), cantidad de personas y estado del pago. -->
+<head th:replace="~{fragments/layout :: head(|Reserva ${detail.reservation().code}|)}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('reservations')}"></aside>
+
+    <main class="admin-main" th:with="reservation=${detail.reservation()}, slot=${detail.reservation().slot},
+            activity=${detail.reservation().slot.activity}, payment=${detail.paymentSummary()}">
+        <div class="breadcrumb">
+            <a th:href="@{/provider/reservations}">Reservas</a> / <span th:text="${reservation.code}">R-000001</span>
+        </div>
+
+        <section class="panel entity-hero">
+            <div class="resv-date">
+                <span class="resv-date__weekday" th:text="${#temporals.format(slot.startTime, 'EEE')}">sáb</span>
+                <span class="resv-date__day" th:text="${#temporals.format(slot.startTime, 'dd')}">01</span>
+                <span class="resv-date__month" th:text="${#temporals.format(slot.startTime, 'MMM')}">nov</span>
+            </div>
+            <div class="entity-hero__main">
+                <h1 th:text="|Reserva ${reservation.code}|">Reserva R-000001</h1>
+                <div class="entity-hero__meta">
+                    <span><svg th:replace="~{fragments/icons :: icon-sized('compass', 'icon--sm')}"></svg> <span th:text="${activity.name}">Actividad</span></span>
+                    <span><svg th:replace="~{fragments/icons :: icon-sized('clock', 'icon--sm')}"></svg>
+                        <span th:text="${#strings.capitalize(#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM ''de'' yyyy, HH:mm ''h'''))}">Fecha</span></span>
+                    <span><svg th:replace="~{fragments/icons :: icon-sized('users', 'icon--sm')}"></svg>
+                        <span th:text="${reservation.participantCount == 1} ? '1 persona' : |${reservation.participantCount} personas|">2 personas</span></span>
+                </div>
+            </div>
+            <span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span>
+        </section>
+
+        <div class="alert alert--warning" role="status" th:if="${reservation.scheduleChanged and reservation.active}">
+            <div>Cambiaste el horario después de esta reserva: el turista puede cancelarla con devolución total.</div>
+        </div>
+
+        <div class="admin-detail-layout">
+            <div>
+                <!-- Los participantes -->
+                <section class="panel">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('users', '')}"></svg></span>
+                        <div class="panel__title">
+                            <h2>Participantes</h2>
+                            <p th:text="${activity.minimumAge != null} ? |Edad mínima de la actividad: ${activity.minimumAge} años. La edad es la que tienen el día de la actividad.| : 'La edad es la que tienen el día de la actividad.'">Texto</p>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr><th>#</th><th>Nombre</th><th>Apellido</th><th>Fecha de nacimiento</th><th>Edad</th></tr></thead>
+                            <tbody>
+                            <tr th:each="participant, iter : ${reservation.participants}">
+                                <td class="muted" th:text="${iter.count}">1</td>
+                                <td class="cell-title" th:text="${participant.firstName}">Nombre</td>
+                                <td th:text="${participant.lastName}">Apellido</td>
+                                <td th:text="${#temporals.format(participant.birthDate, 'dd/MM/yyyy')}">01/01/1990</td>
+                                <td th:text="|${participant.ageOn(slot.startTime.toLocalDate())} años|">36 años</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Quien reservo -->
+                <section class="panel">
+                    <div class="panel__head">
+                        <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('user', '')}"></svg></span>
+                        <div class="panel__title"><h2>Quién reservó</h2></div>
+                    </div>
+                    <dl class="info-grid">
+                        <div class="info-item">
+                            <svg th:replace="~{fragments/icons :: icon-sized('user', 'icon--sm')}"></svg>
+                            <div><dt>Turista</dt><dd th:text="${reservation.tourist.fullName}">Nombre</dd></div>
+                        </div>
+                        <div class="info-item">
+                            <svg th:replace="~{fragments/icons :: icon-sized('mail', 'icon--sm')}"></svg>
+                            <div><dt>Correo</dt><dd><a th:href="|mailto:${reservation.tourist.email}|" th:text="${reservation.tourist.email}">correo</a></dd></div>
+                        </div>
+                        <div class="info-item">
+                            <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg>
+                            <div><dt>Reservó el</dt><dd th:text="${#temporals.format(reservation.createdAt, 'dd/MM/yyyy HH:mm')}">fecha</dd></div>
+                        </div>
+                        <div class="info-item">
+                            <svg th:replace="~{fragments/icons :: icon-sized('ticket', 'icon--sm')}"></svg>
+                            <div><dt>Código</dt><dd th:text="${reservation.code}">R-000001</dd></div>
+                        </div>
+                    </dl>
+                </section>
+            </div>
+
+            <!-- El pago -->
+            <aside class="panel action-panel">
+                <div class="panel__head">
+                    <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('bank', '')}"></svg></span>
+                    <div class="panel__title"><h2>Pago</h2></div>
+                </div>
+                <div class="panel__body form-stack">
+                    <span class="badge" th:classappend="${'badge--' + payment.tone()}" th:text="${payment.label()}">Pagada</span>
+                    <dl class="summary-list">
+                        <div><dt>Precio por persona</dt><dd th:text="|$ ${#numbers.formatDecimal(reservation.unitPrice, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</dd></div>
+                        <div><dt>Personas</dt><dd th:text="${reservation.participantCount}">2</dd></div>
+                        <div class="summary-list__total"><dt>Total</dt><dd th:text="|$ ${#numbers.formatDecimal(reservation.totalAmount, 1, 'POINT', 0, 'COMMA')}|">$ 3.000</dd></div>
+                    </dl>
+                    <p class="muted small" th:if="${payment.charge() != null}"
+                       th:text="|Cobrado el ${#temporals.format(payment.charge().createdAt, 'dd/MM/yyyy HH:mm')} con la tarjeta terminada en ${payment.charge().cardLastDigits}.|">Cobrado</p>
+
+                    <!-- Cancelacion y devolucion -->
+                    <div class="reason-box cancellation-box" th:if="${detail.cancellation() != null}" th:with="cancellation=${detail.cancellation()}">
+                        <strong th:text="${cancellation.reason.label}">Cancelada</strong>
+                        <span th:text="|el ${#temporals.format(cancellation.cancelledAt, 'dd/MM/yyyy HH:mm')}.|">fecha</span>
+                        <dl class="summary-list">
+                            <div><dt>Cargo (para vos)</dt><dd th:text="|$ ${#numbers.formatDecimal(cancellation.feeAmount, 1, 'POINT', 0, 'COMMA')}|">$ 0</dd></div>
+                            <div><dt>Devolución al turista</dt><dd th:text="|$ ${#numbers.formatDecimal(cancellation.refundAmount, 1, 'POINT', 0, 'COMMA')}|">$ 0</dd></div>
+                        </dl>
+                        <span class="muted small" th:if="${payment.refund() != null}" th:text="|Estado de la devolución: ${payment.refund().status.label}.|">Estado</span>
+                    </div>
+
+                    <!-- Todos los intentos (RF-18) -->
+                    <div class="payment-attempts" th:unless="${detail.payments().isEmpty()}">
+                        <h4>Movimientos</h4>
+                        <ul>
+                            <li th:each="item : ${detail.payments()}">
+                                <span>
+                                    <span th:text="|${item.type.label} · $ ${#numbers.formatDecimal(item.amount, 1, 'POINT', 0, 'COMMA')}|">Cobro · $ 3.000</span>
+                                    <small th:text="${#temporals.format(item.createdAt, 'dd/MM HH:mm')}">17/10 21:00</small>
+                                </span>
+                                <span class="badge"
+                                      th:classappend="${item.status.name() == 'APPROVED'} ? 'badge--approved' : (${item.status.name() == 'REJECTED'} ? 'badge--denied' : 'badge--pending')"
+                                      th:text="${item.status.label}">Aprobado</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <a class="btn btn--block" th:href="@{/provider/reservations/slots/{id}/participants(id=${slot.id})}">
+                        <svg th:replace="~{fragments/icons :: icon-sized('users', 'icon--sm')}"></svg> Todos los participantes del horario
+                    </a>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

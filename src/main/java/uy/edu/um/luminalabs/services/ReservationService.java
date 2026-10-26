@@ -17,6 +17,7 @@ import uy.edu.um.luminalabs.repositories.UserRepository;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -90,6 +91,47 @@ public class ReservationService {
     // CU-13: reservas del turista ordenadas por fecha del slot
     public List<Reservation> findByTourist(Long touristId) {
         return reservationRepository.findByTourist_IdOrderBySlot_StartTimeAsc(touristId);
+    }
+
+    // CU-13 paso 2: las reservas del turista separadas para "Mis reservas". Las pendientes de pago van aparte
+    // para destacarlas; las canceladas y vencidas pasan al historial aunque su horario no haya llegado.
+    public TouristReservations findOverview(Long touristId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        List<Reservation> pendingPayment = new ArrayList<>();
+        List<Reservation> upcoming = new ArrayList<>();
+        List<Reservation> history = new ArrayList<>();
+        for (Reservation reservation : findByTourist(touristId)) {
+            if (reservation.isActive() && reservation.isUpcoming(now)) {
+                (reservation.isPendingPayment() ? pendingPayment : upcoming).add(reservation);
+            } else {
+                history.add(reservation);
+            }
+        }
+        // Historial: la mas reciente primero
+        return new TouristReservations(pendingPayment, upcoming, history.reversed(), now);
+    }
+
+    // Reservas de "Mis reservas", cada lista ordenada como se muestra. "now" es el momento de la consulta.
+    public record TouristReservations(List<Reservation> pendingPayment, List<Reservation> upcoming,
+                                      List<Reservation> history, LocalDateTime now) {
+
+        public boolean isEmpty() {
+            return pendingPayment.isEmpty() && upcoming.isEmpty() && history.isEmpty();
+        }
+
+        // Dias de calendario hasta la fecha del horario (0 = hoy)
+        public long daysUntil(Reservation reservation) {
+            return ChronoUnit.DAYS.between(now.toLocalDate(), reservation.getSlot().getStartTime().toLocalDate());
+        }
+
+        // Minutos que le quedan para pagar una reserva pendiente (0 si el plazo ya paso)
+        public long minutesToPay(Reservation reservation) {
+            return Math.max(0, ChronoUnit.MINUTES.between(now, reservation.getPaymentDeadline()));
+        }
+
+        public long finishedCount() {
+            return history.stream().filter(reservation -> reservation.getStatus() == ReservationStatus.FINISHED).count();
+        }
     }
 
     // RNF-10: la reserva de otro turista se trata como inexistente (404)

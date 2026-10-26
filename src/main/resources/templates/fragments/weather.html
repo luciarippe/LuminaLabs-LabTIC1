@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+
+<!-- RF-15: pronostico de un horario. "forecast" es un WeatherForecast. -->
+
+<!-- Version chica, para listas: icono, temperatura y la probabilidad de lluvia si es de 20 % o mas.
+     Uso: th:replace="~{fragments/weather :: chip(${forecast})}" -->
+<span th:fragment="chip(forecast)" class="weather-chip" th:classappend="${forecast.rainLikely} ? 'is-wet'"
+      th:title="|Pronóstico: ${forecast.summary}|">
+    <svg th:replace="~{fragments/icons :: icon-sized(${forecast.condition.icon}, 'icon--sm')}"></svg>
+    <span th:text="|${forecast.temperature}°|">22°</span>
+    <span class="weather-chip__rain" th:if="${forecast.rainProbability != null and forecast.rainProbability >= 20}">
+        <svg th:replace="~{fragments/icons :: icon-sized('droplet', 'icon--sm')}"></svg><span th:text="|${forecast.rainProbability} %|">40 %</span>
+    </span>
+</span>
+
+<!-- Version completa, para el detalle de la reserva. Uso: th:replace="~{fragments/weather :: card(${forecast})}" -->
+<div th:fragment="card(forecast)" class="weather-card" th:classappend="${forecast.rainLikely} ? 'is-wet'">
+    <span class="weather-card__icon"><svg th:replace="~{fragments/icons :: icon-sized(${forecast.condition.icon}, 'icon--lg')}"></svg></span>
+    <div class="weather-card__main">
+        <span class="weather-card__label">Pronóstico para tu actividad</span>
+        <strong th:text="|${forecast.temperature} °C · ${forecast.condition.label}|">22 °C · Parcialmente nublado</strong>
+        <span class="weather-card__details">
+            <span th:if="${forecast.rainProbability != null}">
+                <svg th:replace="~{fragments/icons :: icon-sized('droplet', 'icon--sm')}"></svg>
+                <span th:text="|${forecast.rainProbability} % de lluvia|">10 % de lluvia</span>
+            </span>
+            <span>
+                <svg th:replace="~{fragments/icons :: icon-sized('wind', 'icon--sm')}"></svg>
+                <span th:text="|Viento ${forecast.windSpeed} km/h|">Viento 15 km/h</span>
+            </span>
+        </span>
+        <span class="weather-card__tip" th:if="${forecast.rainLikely}">Puede llover: llevá abrigo para la lluvia.
+            Si el organizador suspende la actividad por el clima, te avisamos.</span>
+    </div>
+</div>
+
+</body>
+</html>

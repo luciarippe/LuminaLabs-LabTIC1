@@ -12,11 +12,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import uy.edu.um.luminalabs.dto.AdminForm;
+import uy.edu.um.luminalabs.dto.CategoryForm;
+import uy.edu.um.luminalabs.dto.LocationForm;
 import uy.edu.um.luminalabs.dto.PasswordChangeForm;
 import uy.edu.um.luminalabs.dto.ProfileForm;
+import uy.edu.um.luminalabs.entities.ActivityCategory;
 import uy.edu.um.luminalabs.entities.Admin;
 import uy.edu.um.luminalabs.entities.Business;
 import uy.edu.um.luminalabs.entities.BusinessStatus;
+import uy.edu.um.luminalabs.entities.Department;
 import uy.edu.um.luminalabs.entities.Location;
 import uy.edu.um.luminalabs.entities.User;
 import uy.edu.um.luminalabs.exceptions.FieldValidationException;
@@ -26,6 +30,7 @@ import uy.edu.um.luminalabs.services.AccountService;
 import uy.edu.um.luminalabs.services.AdminAccountService;
 import uy.edu.um.luminalabs.services.BusinessService;
 import uy.edu.um.luminalabs.services.BusinessStatusCounts;
+import uy.edu.um.luminalabs.services.CategoryService;
 import uy.edu.um.luminalabs.services.LocationService;
 
 import java.util.List;
@@ -42,12 +47,7 @@ public class AdminController {
     private final AccountService accountService;
     private final SessionUserRefresher sessionUserRefresher;
     private final LocationService locationService;
-
-    // Se usa en el menu lateral y en los indicadores de todas las paginas de administracion
-    @ModelAttribute("statusCounts")
-    public BusinessStatusCounts statusCounts() {
-        return businessService.countByStatus();
-    }
+    private final CategoryService categoryService;
 
     @GetMapping
     public String dashboard(Model model) {
@@ -134,34 +134,193 @@ public class AdminController {
         return changeStatus(id, redirectAttributes, () -> businessService.reactivate(id), "reactivado");
     }
 
-    // Configuracion > Localidades: la foto de cada una (se muestra en la portada y en las actividades sin fotos)
+    // Configuracion > Localidades (CU-10, RF-24). Primero la lista de departamentos; al entrar a uno, su foto y sus
+    // localidades (alta, modificacion y eliminacion).
     @GetMapping("/locations")
     public String locations(Model model) {
-        model.addAttribute("locationsByDepartment", locationService.findAllGroupedByDepartment());
+        model.addAttribute("departments", locationService.summarizeDepartments());
         return "admin/locations";
     }
 
-    @PostMapping("/locations/{id}/photo")
-    public String uploadLocationPhoto(@PathVariable Long id, @RequestParam(value = "photo", required = false) MultipartFile photo,
-                                      RedirectAttributes redirectAttributes) {
+    // edit: la localidad que se esta modificando (sin edit, el formulario es para una nueva en este departamento)
+    @GetMapping("/locations/{department}")
+    public String departmentLocations(@PathVariable Department department, @RequestParam(required = false) Long edit,
+                                      Model model, RedirectAttributes redirectAttributes) {
         try {
-            Location location = locationService.setPhoto(id, photo);
-            redirectAttributes.addFlashAttribute("successMessage", "Guardamos la foto de " + location.getName() + ".");
+            model.addAttribute("form", edit == null ? new LocationForm(department) : new LocationForm(locationService.find(edit)));
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/admin/locations/" + department;
         }
-        return "redirect:/admin/locations#location-" + id;
+        return departmentPage(department, edit, model);
     }
 
-    @PostMapping("/locations/{id}/photo/delete")
-    public String removeLocationPhoto(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    @PostMapping("/locations")
+    public String createLocation(@Valid @ModelAttribute("form") LocationForm form, BindingResult bindingResult,
+                                 Model model, RedirectAttributes redirectAttributes) {
+        if (!bindingResult.hasErrors()) {
+            try {
+                Location location = locationService.create(form);
+                redirectAttributes.addFlashAttribute("successMessage", "Agregamos " + location.getName()
+                        + ". Ya se puede elegir al publicar actividades y registrar emprendimientos.");
+                return "redirect:/admin/locations/" + location.getDepartment() + "#location-" + location.getId();
+            } catch (FieldValidationException e) {
+                e.getFieldErrors().forEach((field, message) -> bindingResult.rejectValue(field, "invalid", message));
+            }
+        }
+        if (form.getDepartment() == null) {
+            return "redirect:/admin/locations";
+        }
+        return departmentPage(form.getDepartment(), null, model);
+    }
+
+    // 7a: el cambio se ve en todas las actividades y emprendimientos que la usan
+    @PostMapping("/locations/{id}")
+    public String updateLocation(@PathVariable Long id, @Valid @ModelAttribute("form") LocationForm form,
+                                 BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes) {
+        if (!bindingResult.hasErrors()) {
+            try {
+                Location location = locationService.update(id, form);
+                redirectAttributes.addFlashAttribute("successMessage", "Guardamos los cambios de " + location.getName()
+                        + ". Se ven en todas las actividades y emprendimientos que la usan.");
+                return "redirect:/admin/locations/" + location.getDepartment() + "#location-" + id;
+            } catch (FieldValidationException e) {
+                e.getFieldErrors().forEach((field, message) -> bindingResult.rejectValue(field, "invalid", message));
+            } catch (IllegalArgumentException e) {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+                return "redirect:/admin/locations";
+            }
+        }
+        // Se vuelve al departamento donde estaba la localidad (el del formulario puede ser el nuevo)
+        return departmentPage(locationService.find(id).getDepartment(), id, model);
+    }
+
+    // 6b: si esta en uso no se elimina y se informa cuantas actividades y emprendimientos la usan
+    @PostMapping("/locations/{id}/delete")
+    public String deleteLocation(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        String page = locationPage(id);
         try {
-            Location location = locationService.removePhoto(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Quitamos la foto de " + location.getName() + ".");
+            Location location = locationService.delete(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Eliminamos " + location.getName() + ".");
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
-        return "redirect:/admin/locations#location-" + id;
+        return "redirect:" + page;
+    }
+
+    // Foto del departamento: se muestra en "Destinos" de la portada y en las actividades sin fotos propias
+    @PostMapping("/departments/{department}/photo")
+    public String uploadDepartmentPhoto(@PathVariable Department department,
+                                        @RequestParam(value = "photo", required = false) MultipartFile photo,
+                                        RedirectAttributes redirectAttributes) {
+        try {
+            locationService.setDepartmentPhoto(department, photo);
+            redirectAttributes.addFlashAttribute("successMessage", "Guardamos la foto de " + department.getLabel()
+                    + ". Ya se ve en los destinos de la portada y en sus actividades sin fotos.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/locations/" + department;
+    }
+
+    @PostMapping("/departments/{department}/photo/delete")
+    public String removeDepartmentPhoto(@PathVariable Department department, RedirectAttributes redirectAttributes) {
+        locationService.removeDepartmentPhoto(department);
+        redirectAttributes.addFlashAttribute("successMessage", "Quitamos la foto de " + department.getLabel()
+                + ". En su lugar se va a ver un paisaje dibujado.");
+        return "redirect:/admin/locations/" + department;
+    }
+
+    private String departmentPage(Department department, Long editingId, Model model) {
+        model.addAttribute("department", department);
+        model.addAttribute("departmentPhotoId", locationService.findDepartmentPhoto(department));
+        model.addAttribute("departments", Department.values());
+        model.addAttribute("locations", locationService.findByDepartment(department));
+        model.addAttribute("editingId", editingId);
+        return "admin/department-locations";
+    }
+
+    // La pagina del departamento de la localidad, o la lista si ya no existe
+    private String locationPage(Long id) {
+        try {
+            Location location = locationService.find(id);
+            return "/admin/locations/" + location.getDepartment();
+        } catch (IllegalArgumentException e) {
+            return "/admin/locations";
+        }
+    }
+
+    // Configuracion > Categorias (CU-10, RF-24): listado con alta a la derecha; modificar usa la misma pagina
+    @GetMapping("/categories")
+    public String categories(Model model) {
+        model.addAttribute("form", new CategoryForm());
+        return categoriesPage(null, model);
+    }
+
+    @GetMapping("/categories/{id}/edit")
+    public String editCategory(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            model.addAttribute("form", new CategoryForm(categoryService.find(id)));
+            return categoriesPage(id, model);
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/admin/categories";
+        }
+    }
+
+    @PostMapping("/categories")
+    public String createCategory(@Valid @ModelAttribute("form") CategoryForm form, BindingResult bindingResult,
+                                 Model model, RedirectAttributes redirectAttributes) {
+        if (!bindingResult.hasErrors()) {
+            try {
+                ActivityCategory category = categoryService.create(form);
+                redirectAttributes.addFlashAttribute("successMessage", "Agregamos la categoría \"" + category.getName()
+                        + "\". Los prestadores ya la pueden elegir al publicar.");
+                return "redirect:/admin/categories#category-" + category.getId();
+            } catch (FieldValidationException e) {
+                e.getFieldErrors().forEach((field, message) -> bindingResult.rejectValue(field, "invalid", message));
+            }
+        }
+        return categoriesPage(null, model);
+    }
+
+    // 7a: el cambio se ve en todas las actividades que la usan
+    @PostMapping("/categories/{id}")
+    public String updateCategory(@PathVariable Long id, @Valid @ModelAttribute("form") CategoryForm form,
+                                 BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes) {
+        if (!bindingResult.hasErrors()) {
+            try {
+                ActivityCategory category = categoryService.update(id, form);
+                redirectAttributes.addFlashAttribute("successMessage", "Guardamos los cambios de \"" + category.getName()
+                        + "\". Se ven en todas las actividades que la usan.");
+                return "redirect:/admin/categories#category-" + id;
+            } catch (FieldValidationException e) {
+                e.getFieldErrors().forEach((field, message) -> bindingResult.rejectValue(field, "invalid", message));
+            } catch (IllegalStateException e) {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+                return "redirect:/admin/categories";
+            }
+        }
+        return categoriesPage(id, model);
+    }
+
+    // 6b: si esta en uso no se elimina y se informa cuantas actividades la usan
+    @PostMapping("/categories/{id}/delete")
+    public String deleteCategory(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            ActivityCategory category = categoryService.delete(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Eliminamos la categoría \"" + category.getName() + "\".");
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/categories";
+    }
+
+    // editingId: la categoria que se esta modificando (null = el formulario es para una nueva)
+    private String categoriesPage(Long editingId, Model model) {
+        model.addAttribute("categories", categoryService.findAllWithUsage());
+        model.addAttribute("editingId", editingId);
+        return "admin/categories";
     }
 
     // Usuarios > Nuevo administrador

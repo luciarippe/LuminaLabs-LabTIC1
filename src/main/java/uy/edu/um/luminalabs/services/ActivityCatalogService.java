@@ -14,6 +14,8 @@ import uy.edu.um.luminalabs.exceptions.ActivityNotFoundException;
 import uy.edu.um.luminalabs.repositories.ActivityCategoryRepository;
 import uy.edu.um.luminalabs.repositories.ActivityRepository;
 import uy.edu.um.luminalabs.repositories.ActivityRepository.DepartmentCount;
+import uy.edu.um.luminalabs.repositories.RatingRepository;
+import uy.edu.um.luminalabs.repositories.RatingRepository.RatingSummary;
 import uy.edu.um.luminalabs.repositories.SlotRepository;
 import uy.edu.um.luminalabs.repositories.SlotRepository.SlotSummary;
 
@@ -36,6 +38,7 @@ public class ActivityCatalogService {
     private final ActivityRepository activityRepository;
     private final SlotRepository slotRepository;
     private final ActivityCategoryRepository categoryRepository;
+    private final RatingRepository ratingRepository;
     private final Clock clock;
 
     public List<ActivityCard> search(ActivitySearchCriteria criteria) {
@@ -90,13 +93,19 @@ public class ActivityCatalogService {
             return List.of();
         }
         List<Long> ids = activities.stream().map(Activity::getId).toList();
-        Map<Long, SlotSummary> summaries = slotRepository.summarize(ids, SlotStatus.ACTIVE, now).stream()
+        Map<Long, SlotSummary> slots = slotRepository.summarize(ids, SlotStatus.ACTIVE, now).stream()
                 .collect(Collectors.toMap(SlotSummary::getActivityId, Function.identity()));
+        // CU-07 paso 4: valoracion promedio en la tarjeta (solo las visibles, ver RatingRepository.summarize)
+        Map<Long, RatingSummary> ratings = ratingRepository.summarize(ids).stream()
+                .collect(Collectors.toMap(RatingSummary::getActivityId, Function.identity()));
         return activities.stream().map(activity -> {
-            SlotSummary summary = summaries.get(activity.getId());
-            return summary == null
-                    ? new ActivityCard(activity, null, null)
-                    : new ActivityCard(activity, summary.getFromPrice(), summary.getNextStart());
+            SlotSummary slot = slots.get(activity.getId());
+            RatingSummary rating = ratings.get(activity.getId());
+            return new ActivityCard(activity,
+                    slot == null ? null : slot.getFromPrice(),
+                    slot == null ? null : slot.getNextStart(),
+                    rating == null ? null : rating.getAverage(),
+                    rating == null ? 0 : rating.getTotal());
         }).toList();
     }
 
@@ -109,8 +118,12 @@ public class ActivityCatalogService {
                     Comparator.nullsLast(Comparator.naturalOrder())).thenComparing(byName);
             case DATE -> withDatesFirst.thenComparing(ActivityCard::nextStart,
                     Comparator.nullsLast(Comparator.naturalOrder())).thenComparing(byName);
-            // Cuando existan las valoraciones (RF-23), "recomendadas" deberia ordenar por puntaje
-            case RECOMMENDED -> withDatesFirst.thenComparing(byName);
+            // Mejor valoradas primero (promedio ponderado, ver ActivityCard.recommendationScore); a igual puntaje,
+            // la que tiene mas valoraciones
+            case RECOMMENDED -> withDatesFirst
+                    .thenComparing(Comparator.comparingDouble(ActivityCard::recommendationScore).reversed())
+                    .thenComparing(Comparator.comparingLong(ActivityCard::ratingCount).reversed())
+                    .thenComparing(byName);
         };
     }
 }

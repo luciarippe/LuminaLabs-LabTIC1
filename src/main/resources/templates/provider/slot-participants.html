@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- CU-09 6a: lista consolidada de los participantes confirmados de un horario, para organizar la salida.
+     Se puede imprimir (el menu y los botones no salen en la hoja, ver @media print en styles.css). -->
+<head th:replace="~{fragments/layout :: head(|Participantes · ${list.slot().activity.name}|)}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('reservations')}"></aside>
+
+    <main class="admin-main" th:with="slot=${list.slot()}, activity=${list.slot().activity}">
+        <div class="breadcrumb no-print">
+            <a th:href="@{/provider/reservations}">Reservas</a> / <span>Participantes</span>
+        </div>
+
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Lista de participantes</span>
+                <h1 th:text="${activity.name}">Actividad</h1>
+                <p th:text="|${#strings.capitalize(#temporals.format(slot.startTime, 'EEEE d ''de'' MMMM ''de'' yyyy, HH:mm ''h'''))} · ${activity.address}|">Fecha · Punto de encuentro</p>
+            </div>
+            <button type="button" class="btn no-print" onclick="window.print()">
+                <svg th:replace="~{fragments/icons :: icon-sized('file-text', 'icon--sm')}"></svg> Imprimir
+            </button>
+        </div>
+
+        <div class="kpi-grid participants-kpis">
+            <div class="kpi">
+                <span class="kpi__label">Confirmados</span>
+                <span class="kpi__value" th:text="${list.confirmedSeats()}">8</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi__label">Capacidad</span>
+                <span class="kpi__value" th:text="${slot.maxCapacity}">12</span>
+            </div>
+            <div class="kpi">
+                <span class="kpi__label">Lugares libres</span>
+                <span class="kpi__value" th:text="${slot.availability}">2</span>
+            </div>
+            <div class="kpi" th:classappend="${list.pendingSeats() > 0} ? 'kpi--attention'">
+                <span class="kpi__label">Pendientes de pago</span>
+                <span class="kpi__value" th:text="${list.pendingSeats()}">2</span>
+            </div>
+        </div>
+
+        <div class="alert alert--info no-print" role="status" th:if="${list.pendingSeats() > 0}">
+            <div th:text="${list.pendingSeats() == 1} ? 'Hay 1 lugar reservado que todavía no se pagó: no está en la lista. Si no se paga en 2 horas, se libera.' : |Hay ${list.pendingSeats()} lugares reservados que todavía no se pagaron: no están en la lista. Si no se pagan en 2 horas, se liberan.|">Pendientes</div>
+        </div>
+
+        <section class="panel">
+            <div class="empty-state" th:if="${list.confirmed().isEmpty()}">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('users', '')}"></svg></div>
+                <h3>Todavía no hay participantes confirmados</h3>
+                <p>Cuando se paguen las reservas de este horario, sus participantes van a aparecer acá.</p>
+            </div>
+
+            <div class="table-wrap" th:unless="${list.confirmed().isEmpty()}">
+                <table class="table participants-table">
+                    <thead>
+                    <tr><th>#</th><th>Participante</th><th>Fecha de nacimiento</th><th>Edad</th><th>Reserva</th><th>Reservó</th><th class="print-only">Presente</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${list.rows()}" th:with="participant=${row.participant()}, reservation=${row.reservation()}"
+                        th:classappend="${row.firstOfReservation() and row.number() > 1} ? 'group-start'">
+                        <td class="muted" th:text="${row.number()}">1</td>
+                        <td class="cell-title" th:text="|${participant.lastName}, ${participant.firstName}|">Apellido, Nombre</td>
+                        <td th:text="${#temporals.format(participant.birthDate, 'dd/MM/yyyy')}">01/01/1990</td>
+                        <td th:text="${participant.ageOn(slot.startTime.toLocalDate())}">36</td>
+                        <td><a th:href="@{/provider/reservations/{id}(id=${reservation.id})}" th:text="${reservation.code}">R-000001</a></td>
+                        <td th:text="${row.firstOfReservation()} ? ${reservation.tourist.fullName} : ''">Turista</td>
+                        <td class="print-only"><span class="checkbox-box"></span></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

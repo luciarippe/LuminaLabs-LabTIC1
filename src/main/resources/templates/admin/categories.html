@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Configuracion > Categorias (CU-10, RF-24): listado con cuantas actividades usa cada una, alta y modificacion
+     en el panel de la derecha (editingId != null = se esta modificando esa) y eliminacion si no esta en uso. -->
+<head th:replace="~{fragments/layout :: head('Categorías')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/admin :: sidebar('categories')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Configuración</span>
+                <h1>Categorías de actividades</h1>
+                <p>Los prestadores eligen una o más al publicar cada actividad, y los turistas las usan para filtrar.</p>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="admin-form-layout">
+            <!-- Paso 3: el listado -->
+            <section class="panel">
+                <div class="admin-toolbar" th:unless="${categories.isEmpty()}">
+                    <div class="admin-search">
+                        <label class="visually-hidden" for="category-filter">Buscar categoría</label>
+                        <div class="admin-search__field">
+                            <svg th:replace="~{fragments/icons :: icon-sized('search', 'icon--sm')}"></svg>
+                            <input class="input" type="search" id="category-filter" placeholder="Buscar por nombre o descripción…"
+                                   data-table-filter="category-table">
+                        </div>
+                    </div>
+                    <span class="muted small" th:text="${categories.size() == 1} ? '1 categoría' : |${categories.size()} categorías|">9 categorías</span>
+                </div>
+
+                <div class="table-wrap" th:unless="${categories.isEmpty()}">
+                    <table class="table" id="category-table">
+                        <thead>
+                        <tr><th>Categoría</th><th>Actividades</th><th><span class="visually-hidden">Acciones</span></th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${categories}" th:with="category=${row.category()}" th:id="|category-${category.id}|"
+                            th:classappend="${editingId == category.id} ? 'is-editing'">
+                            <td>
+                                <span class="cell-title" th:text="${category.name}">Nombre</span>
+                                <span class="cell-sub" th:text="${category.description != null} ? ${category.description} : 'Sin descripción'">Descripción</span>
+                            </td>
+                            <td class="nowrap">
+                                <a th:if="${row.inUse}" th:href="@{/activities(categoryId=${category.id})}" target="_blank" rel="noopener"
+                                   th:text="${row.activities() == 1} ? '1 actividad' : |${row.activities()} actividades|"
+                                   title="Ver en el portal">3 actividades</a>
+                                <span class="muted" th:unless="${row.inUse}">Sin uso</span>
+                            </td>
+                            <td class="cell-actions">
+                                <a class="btn btn--sm" th:href="@{/admin/categories/{id}/edit(id=${category.id})}">
+                                    <svg th:replace="~{fragments/icons :: icon-sized('edit', 'icon--sm')}"></svg> Modificar
+                                </a>
+                                <!-- 6b: en uso no se puede eliminar (el servidor tambien lo controla y avisa cuantas la usan) -->
+                                <form class="inline-form" method="post" th:action="@{/admin/categories/{id}/delete(id=${category.id})}"
+                                      th:attr="data-confirm=|¿Eliminar la categoría ${category.name}?|">
+                                    <button type="submit" class="btn btn--sm btn--ghost btn--danger-text"
+                                            th:disabled="${row.inUse}"
+                                            th:title="${row.inUse} ? 'No se puede eliminar: hay actividades que la usan' : 'Eliminar'">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="empty-state" data-table-empty="category-table" hidden>
+                        <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('search', '')}"></svg></div>
+                        <h3>Sin resultados</h3>
+                        <p>Ninguna categoría coincide con la búsqueda.</p>
+                    </div>
+                </div>
+
+                <div class="empty-state" th:if="${categories.isEmpty()}">
+                    <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('tag', '')}"></svg></div>
+                    <h3>Todavía no hay categorías</h3>
+                    <p>Agregá la primera con el formulario.</p>
+                </div>
+            </section>
+
+            <!-- Pasos 4 a 7: alta o modificacion -->
+            <section class="panel category-form-panel">
+                <div class="panel__head">
+                    <span class="icon-chip" th:classappend="${editingId == null} ? 'icon-chip--green' : 'icon-chip--amber'">
+                        <svg th:replace="~{fragments/icons :: icon-sized(${editingId == null ? 'tag' : 'edit'}, '')}"></svg>
+                    </span>
+                    <div class="panel__title">
+                        <h2 th:text="${editingId == null} ? 'Nueva categoría' : 'Modificar categoría'">Nueva categoría</h2>
+                        <p th:text="${editingId == null} ? 'Queda disponible enseguida para los prestadores.' : 'El cambio se ve en todas las actividades que la usan.'">Texto</p>
+                    </div>
+                </div>
+                <form th:action="${editingId == null} ? @{/admin/categories} : @{/admin/categories/{id}(id=${editingId})}"
+                      th:object="${form}" method="post" novalidate>
+                    <div class="panel__body form-stack">
+                        <div class="field">
+                            <label for="name">Nombre</label>
+                            <input class="input" type="text" th:field="*{name}" th:errorclass="is-invalid" maxlength="60"
+                                   placeholder="Ej.: Observación de aves">
+                            <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+                        </div>
+                        <div class="field">
+                            <label for="description">Descripción <span class="muted">(opcional)</span></label>
+                            <textarea class="textarea" th:field="*{description}" th:errorclass="is-invalid" maxlength="500" rows="3"
+                                      placeholder="Qué tipo de experiencias entran en esta categoría."></textarea>
+                            <span class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+                        </div>
+                    </div>
+                    <div class="panel__foot">
+                        <a class="btn btn--ghost" th:if="${editingId != null}" th:href="@{/admin/categories}">Cancelar</a>
+                        <button type="submit" class="btn btn--primary"
+                                th:text="${editingId == null} ? 'Agregar categoría' : 'Guardar cambios'">Agregar categoría</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>

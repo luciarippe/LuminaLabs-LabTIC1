@@ -74,14 +74,11 @@ class ActivityPhotosTest {
         assertThrows(IllegalStateException.class, () -> addPhoto(99L));
     }
 
+    // Sin fotos propias no tiene portada: las plantillas usan la del departamento (ver ViewHelperTest)
     @Test
-    void usesTheLocationPhotoWhenTheActivityHasNone() {
-        Location location = new Location("Cabo Polonio", Department.ROCHA);
-        StoredImage locationPhoto = new StoredImage("image/jpeg", new byte[]{1}, 10, 10, LocalDateTime.of(2026, 10, 17, 12, 0));
-        ReflectionTestUtils.setField(locationPhoto, "id", 50L);
-        location.setPhoto(locationPhoto);
-        activity.setLocation(location);
+    void hasNoCoverWithoutPhotos() {
+        activity.setLocation(new Location("Cabo Polonio", Department.ROCHA));
 
-        assertEquals(50L, activity.getCoverImageId());
+        assertNull(activity.getCoverImageId());
     }
 }

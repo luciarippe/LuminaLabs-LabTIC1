@@ -31,6 +31,11 @@
                 </div>
                 <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
                       th:text="${business.status.label}">Aprobado</span>
+                <!-- CU-15 -->
+                <a class="btn btn--sm" th:href="@{/provider/businesses/{id}/providers(id=${business.id})}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('users', 'icon--sm')}"></svg>
+                    <span th:text="|Prestadores (${business.providers.size()})|">Prestadores (1)</span>
+                </a>
                 <a class="btn btn--sm" th:href="@{/provider/businesses/{id}/social(id=${business.id})}">
                     <svg th:replace="~{fragments/icons :: icon-sized('globe', 'icon--sm')}"></svg> Redes sociales
                 </a>

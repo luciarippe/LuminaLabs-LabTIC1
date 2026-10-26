@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<body>
+
+<!-- Estrellas de solo lectura. "value" va de 0 a 5 y puede tener decimales (un promedio): la capa de estrellas
+     llenas se recorta al porcentaje. Uso: th:replace="~{fragments/rating :: stars(${4.5})}" -->
+<span th:fragment="stars(value)" class="stars" role="img"
+      th:aria-label="|${#numbers.formatDecimal(value, 1, 'POINT', 1, 'COMMA')} de 5 estrellas|">
+    <span class="stars__row stars__row--empty" aria-hidden="true">
+        <th:block th:each="i : ${#numbers.sequence(1, 5)}"><svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg></th:block>
+    </span>
+    <span class="stars__row stars__row--full" aria-hidden="true" th:style="|width: ${value * 20}%|">
+        <th:block th:each="i : ${#numbers.sequence(1, 5)}"><svg th:replace="~{fragments/icons :: icon-sized('star', '')}"></svg></th:block>
+    </span>
+</span>
+
+</body>
+</html>

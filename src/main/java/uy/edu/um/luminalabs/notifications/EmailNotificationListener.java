@@ -9,6 +9,8 @@ import uy.edu.um.luminalabs.events.AdminCreatedEvent;
 import uy.edu.um.luminalabs.events.BusinessRegisteredEvent;
 import uy.edu.um.luminalabs.events.BusinessStatusChangedEvent;
 import uy.edu.um.luminalabs.events.MailRecipient;
+import uy.edu.um.luminalabs.events.ModerationEvent;
+import uy.edu.um.luminalabs.events.ProviderTeamEvent;
 import uy.edu.um.luminalabs.events.ReservationCancelledEvent;
 import uy.edu.um.luminalabs.events.ReservationConfirmedEvent;
 import uy.edu.um.luminalabs.events.ReservationExpiredEvent;
@@ -64,6 +66,72 @@ public class EmailNotificationListener {
                         "Para ingresar usá la contraseña que figura abajo. No la compartas con nadie."),
                 "Contraseña", event.initialPassword(),
                 "Iniciar sesión", emailSender.url("/login")));
+    }
+
+    // Moderacion: bloqueo y desbloqueo de cuentas, valoraciones ocultas
+    @Async
+    @TransactionalEventListener
+    public void onModeration(ModerationEvent event) {
+        switch (event) {
+            case ModerationEvent.AccountBlocked blocked -> emailSender.send(blocked.recipient(), new EmailContent(
+                    "Tu cuenta en Uruguay Mnatural fue bloqueada",
+                    "Tu cuenta fue bloqueada",
+                    List.of("Hola " + blocked.recipient().firstName() + ", un administrador bloqueó tu cuenta en "
+                                    + "Uruguay Mnatural. Mientras esté bloqueada no vas a poder iniciar sesión.",
+                            "Si creés que es un error, respondé a este correo."),
+                    "Motivo", blocked.reason(), null, null));
+            case ModerationEvent.AccountUnblocked unblocked -> emailSender.send(unblocked.recipient(), new EmailContent(
+                    "Tu cuenta en Uruguay Mnatural está activa de nuevo",
+                    "Tu cuenta fue desbloqueada",
+                    List.of("Hola " + unblocked.recipient().firstName() + ", tu cuenta ya está activa otra vez.",
+                            "Podés iniciar sesión como siempre."),
+                    null, null,
+                    "Iniciar sesión", emailSender.url("/login")));
+            case ModerationEvent.RatingHidden hidden -> emailSender.send(hidden.recipient(), new EmailContent(
+                    "Ocultamos tu valoración de " + hidden.activityName(),
+                    "Tu valoración fue ocultada",
+                    List.of("Hola " + hidden.recipient().firstName() + ", un administrador ocultó tu valoración \""
+                                    + hidden.ratingTitle() + "\" de " + hidden.activityName() + ".",
+                            "Ya no se muestra en la página de la actividad ni cuenta en su promedio. Si tenés "
+                                    + "consultas, respondé a este correo."),
+                    "Motivo", hidden.reason(), null, null));
+        }
+    }
+
+    // CU-15: cambios en los prestadores de un emprendimiento
+    @Async
+    @TransactionalEventListener
+    public void onProviderTeamChanged(ProviderTeamEvent event) {
+        switch (event) {
+            case ProviderTeamEvent.Added added -> emailSender.send(added.recipient(), new EmailContent(
+                    "Ahora sos prestador de " + added.businessName(),
+                    "Te sumaron a " + added.businessName(),
+                    List.of("Hola " + added.recipient().firstName() + ", " + added.by() + " te sumó como prestador de "
+                                    + added.businessName() + " en Uruguay Mnatural.",
+                            "Ya podés gestionar sus actividades, fechas y reservas desde tu espacio de prestador."),
+                    null, null,
+                    "Ir a mi espacio", emailSender.url("/provider/businesses")));
+            case ProviderTeamEvent.Removed removed -> emailSender.send(removed.recipient(), new EmailContent(
+                    "Ya no sos prestador de " + removed.businessName(),
+                    "Te quitaron de " + removed.businessName(),
+                    List.of("Hola " + removed.recipient().firstName() + ", " + removed.by() + " te quitó de los prestadores de "
+                                    + removed.businessName() + ".",
+                            "Ya no vas a poder gestionar sus actividades. Si creés que es un error, hablá con los demás "
+                                    + "prestadores del emprendimiento."),
+                    null, null, null, null));
+            case ProviderTeamEvent.Invited invited -> emailSender.send(new MailRecipient(invited.email(), null),
+                    new EmailContent(
+                            invited.by() + " te invitó a " + invited.businessName(),
+                            "Te invitaron a ser prestador",
+                            List.of("Hola, " + invited.by() + " te invitó a sumarte como prestador de "
+                                            + invited.businessName() + " en Uruguay Mnatural.",
+                                    "Para aceptar, entrá al enlace, completá tus datos y elegí tu contraseña. Con eso se crea "
+                                            + "tu cuenta, ya asociada al emprendimiento.",
+                                    "El enlace sirve una sola vez y vence el " + invited.expiresAt().format(DATE_TIME)
+                                            + ". Si no esperabas esta invitación, ignorá este correo."),
+                            null, null,
+                            "Aceptar la invitación", emailSender.url("/invitations/" + invited.token())));
+        }
     }
 
     @Async

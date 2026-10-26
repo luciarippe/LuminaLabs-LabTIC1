@@ -178,4 +178,49 @@ class ReservationServiceTest {
         assertSame(reservation, service.findOwn(TOURIST_ID, 9L));
         assertThrows(ReservationNotFoundException.class, () -> service.findOwn(99L, 9L));
     }
+
+    private Reservation reservationAt(LocalDateTime start, LocalDateTime createdAt) {
+        return new Reservation(tourist, new Slot(activity, start, new BigDecimal("1500.00"), 4),
+                List.of(new Participant("Ana", "Pérez", LocalDate.of(1990, 1, 1))), createdAt);
+    }
+
+    // CU-13 paso 2: pendientes de pago aparte, confirmadas en proximas y el resto en el historial
+    @Test
+    void overviewSeparatesPendingUpcomingAndHistory() {
+        Reservation pending = reservationAt(START, NOW.minusMinutes(30));
+        Reservation confirmed = reservationAt(START.plusDays(3), NOW);
+        confirmed.confirm();
+        Reservation cancelled = reservationAt(START.plusDays(5), NOW);
+        cancelled.cancel();
+        Reservation olderFinished = reservationAt(NOW.minusDays(20), NOW.minusDays(25));
+        olderFinished.confirm();
+        olderFinished.finish();
+        Reservation finished = reservationAt(NOW.minusDays(2), NOW.minusDays(5));
+        finished.confirm();
+        finished.finish();
+        // El repositorio las devuelve ordenadas por fecha del horario
+        when(reservationRepository.findByTourist_IdOrderBySlot_StartTimeAsc(TOURIST_ID))
+                .thenReturn(List.of(olderFinished, finished, pending, confirmed, cancelled));
+
+        ReservationService.TouristReservations overview = service.findOverview(TOURIST_ID);
+
+        assertEquals(List.of(pending), overview.pendingPayment());
+        assertEquals(List.of(confirmed), overview.upcoming());
+        assertEquals(List.of(cancelled, finished, olderFinished), overview.history(), "la mas reciente primero");
+        assertEquals(2, overview.finishedCount());
+        assertEquals(90, overview.minutesToPay(pending));
+        assertEquals(18, overview.daysUntil(confirmed));
+        assertFalse(overview.isEmpty());
+    }
+
+    @Test
+    void minutesToPayIsZeroOnceTheDeadlinePassed() {
+        Reservation late = reservationAt(START, NOW.minusHours(3));
+        when(reservationRepository.findByTourist_IdOrderBySlot_StartTimeAsc(TOURIST_ID)).thenReturn(List.of(late));
+
+        ReservationService.TouristReservations overview = service.findOverview(TOURIST_ID);
+
+        assertEquals(List.of(late), overview.pendingPayment());
+        assertEquals(0, overview.minutesToPay(late));
+    }
 }

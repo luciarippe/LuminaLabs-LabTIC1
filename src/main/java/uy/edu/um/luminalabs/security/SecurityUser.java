@@ -26,6 +26,8 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
     private final String displayName;
     private final Role role;
     private final boolean loginAllowed;
+    // Un administrador bloqueo la cuenta: no puede iniciar sesion (se revisa despues de la contrasena)
+    private final boolean blocked;
     // Solo para prestadores sin emprendimientos aprobados: el estado a informar al rechazar el login
     private final BusinessStatus blockingStatus;
     private String password;
@@ -37,6 +39,7 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
         this.displayName = user.getFirstName();
         this.role = user.getRole();
         this.loginAllowed = loginAllowed;
+        this.blocked = user.isBlocked();
         this.blockingStatus = blockingStatus;
     }
 

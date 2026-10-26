@@ -33,7 +33,17 @@
         <a th:href="@{/admin/locations}" th:classappend="${active == 'locations'} ? 'is-active'">
             <svg th:replace="~{fragments/icons :: icon-sized('pin', 'icon--sm')}"></svg> Localidades
         </a>
+        <a th:href="@{/admin/categories}" th:classappend="${active == 'categories'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('tag', 'icon--sm')}"></svg> Categorías
+        </a>
+        <span class="admin-nav__label">Contenido</span>
+        <a th:href="@{/admin/ratings}" th:classappend="${active == 'ratings'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('star', 'icon--sm')}"></svg> Valoraciones
+        </a>
         <span class="admin-nav__label">Usuarios</span>
+        <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'is-active'">
+            <svg th:replace="~{fragments/icons :: icon-sized('users', 'icon--sm')}"></svg> Todos los usuarios
+        </a>
         <a th:href="@{/admin/admins/new}" th:classappend="${active == 'admin-new'} ? 'is-active'">
             <svg th:replace="~{fragments/icons :: icon-sized('user-plus', 'icon--sm')}"></svg> Nuevo administrador
         </a>

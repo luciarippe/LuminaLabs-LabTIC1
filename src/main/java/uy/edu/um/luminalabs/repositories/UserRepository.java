@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import uy.edu.um.luminalabs.entities.User;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -19,4 +20,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select count(a) from Admin a")
     long countAdmins();
+
+    // Gestion de usuarios: todas las cuentas, la mas nueva primero
+    List<User> findAllByOrderByIdDesc();
+
+    // No se puede bloquear al ultimo administrador activo
+    @Query("select count(a) from Admin a where a.blockedAt is null")
+    long countActiveAdmins();
 }
