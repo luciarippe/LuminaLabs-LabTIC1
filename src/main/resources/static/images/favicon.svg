@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Icono de la pestana de Uruguay Mnatural: una "M" en serif sobre el verde de la marca -->
-  <rect width="64" height="64" rx="14" fill="#0b6e4f"/>
-  <text x="32" y="45" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif"
-        font-size="40" font-weight="700" fill="#ffffff">M</text>
-</svg>

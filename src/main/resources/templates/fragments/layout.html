@@ -7,7 +7,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title} + ' · Uruguay Mnatural'">Uruguay Mnatural</title>
-    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
+    <!-- Icono de la pestana: el sol del logo. apple-touch-icon: acceso directo en la pantalla del celular -->
+    <link rel="icon" type="image/png" sizes="64x64" th:href="@{/images/favicon-64.png}">
+    <link rel="apple-touch-icon" th:href="@{/images/apple-touch-icon.png}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Inter para todo el texto (el nombre "Uruguay Mnatural" es la imagen del logo) -->
