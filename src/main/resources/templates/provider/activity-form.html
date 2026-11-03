@@ -4,7 +4,7 @@
 <head th:replace="~{fragments/layout :: head(${activity == null} ? 'Nueva actividad' : 'Editar actividad')}"></head>
 <body>
 <div class="admin-shell">
-    <aside th:replace="~{fragments/provider :: sidebar(${activity == null} ? 'activity-new' : 'activities')}"></aside>
+    <aside th:replace="~{fragments/provider :: sidebar('activities')}"></aside>
 
 <main class="admin-main">
     <div class="breadcrumb">

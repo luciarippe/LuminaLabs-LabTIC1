@@ -33,6 +33,8 @@
                 </button>
             </form>
         </div>
+        <a class="hero__credit" href="https://commons.wikimedia.org/wiki/File:Punta_del_Este_in_amazing_colors.jpg"
+           target="_blank" rel="noopener">Foto: Jimmy Baikovicius, CC BY-SA 2.0</a>
     </section>
 
     <nav class="category-nav" aria-label="Categorías">
@@ -65,6 +67,16 @@
             </div>
         </div>
     </section>
+
+    <!-- Franja decorativa con las categorias en movimiento (las mismas dos veces, para que el loop no se corte).
+         Los enlaces a cada categoria estan arriba, en category-nav. -->
+    <div class="marquee" aria-hidden="true" th:unless="${categories.isEmpty()}">
+        <div class="marquee__track">
+            <th:block th:each="round : ${#numbers.sequence(1, 2)}">
+                <span class="marquee__item" th:each="category : ${categories}" th:text="${category.name}">Trekking</span>
+            </th:block>
+        </div>
+    </div>
 
     <section class="section section--alt" th:unless="${destinations.isEmpty()}">
         <div class="container">

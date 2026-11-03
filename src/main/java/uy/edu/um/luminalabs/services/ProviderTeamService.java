@@ -19,15 +19,9 @@ import uy.edu.um.luminalabs.repositories.BusinessRepository;
 import uy.edu.um.luminalabs.repositories.ProviderInvitationRepository;
 import uy.edu.um.luminalabs.repositories.UserRepository;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.Comparator;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +34,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ProviderTeamService {
-
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
@@ -204,19 +196,11 @@ public class ProviderTeamService {
         return (Provider) userRepository.findById(providerId).orElseThrow();
     }
 
-    // 32 bytes al azar, en un formato que se puede poner en un enlace
     private static String newToken() {
-        byte[] bytes = new byte[32];
-        RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return SecureTokens.newToken();
     }
 
     static String hash(String token) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
+        return SecureTokens.hash(token);
     }
 }

@@ -274,6 +274,43 @@ class ProviderSlotServiceTest {
         verify(slotRepository, never()).summarize(anyList(), any(), any());
     }
 
+    // ---------- Horarios agrupados por actividad ----------
+
+    private static ReservationRepository.SlotReservationCount reservationCount(long slotId, long reservations) {
+        return new ReservationRepository.SlotReservationCount() {
+            public Long getSlotId() { return slotId; }
+            public long getReservations() { return reservations; }
+        };
+    }
+
+    @Test
+    void groupsUpcomingSlotsByActivityWithTheirReservations() {
+        Activity kayak = activityOf(business, 1L);
+        Activity noSlots = activityOf(business, 2L);
+        Activity ofPending = activityOf(new Business(), 3L);
+        Slot first = kayak.addSlot(new Slot(kayak, NOW.plusDays(1), BigDecimal.TEN, 10));
+        Slot second = kayak.addSlot(new Slot(kayak, NOW.plusDays(2), BigDecimal.TEN, 10));
+        ReflectionTestUtils.setField(first, "id", 31L);
+        ReflectionTestUtils.setField(second, "id", 32L);
+        first.reserveSeats(4);
+        when(activityService.findActivities(PROVIDER_ID)).thenReturn(List.of(kayak, noSlots, ofPending));
+        when(slotRepository.findUpcomingForProvider(eq(PROVIDER_ID), eq(SlotStatus.ACTIVE), eq(NOW), any()))
+                .thenReturn(List.of(first, second));
+        when(reservationRepository.countBySlots(eq(List.of(31L, 32L)), anyList()))
+                .thenReturn(List.of(reservationCount(31L, 2)));
+
+        List<ProviderSlotService.ActivitySchedule> schedule = service.findSchedule(PROVIDER_ID, null);
+
+        // La del emprendimiento pendiente no aparece; la que no tiene horarios si, vacia
+        assertEquals(List.of(kayak, noSlots), schedule.stream().map(ProviderSlotService.ActivitySchedule::activity).toList());
+        ProviderSlotService.ActivitySchedule kayakSchedule = schedule.getFirst();
+        assertEquals(List.of(2L, 0L), kayakSchedule.slots().stream().map(ProviderSlotService.ScheduledSlot::reservations).toList());
+        assertEquals(4, kayakSchedule.reservedSeats());
+        assertEquals(20, kayakSchedule.capacity());
+        assertEquals(40, kayakSchedule.slots().getFirst().occupancyPercent());
+        assertTrue(schedule.get(1).slots().isEmpty());
+    }
+
     // ---------- Repetir un horario ----------
 
     private void repeatable() {

@@ -3,6 +3,7 @@ package uy.edu.um.luminalabs.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uy.edu.um.luminalabs.dto.SlotForm;
@@ -103,6 +104,55 @@ public class ProviderSlotService {
     public record RunningOut(Activity activity, LocalDateTime lastStart, long daysLeft) {
         public boolean hasNoSlots() {
             return lastStart == null;
+        }
+    }
+
+    // Horarios del prestador: los proximos horarios activos agrupados por actividad (en orden alfabetico), con
+    // cuantas reservas vigentes tiene cada uno. businessId null = todos sus emprendimientos. Las actividades de
+    // emprendimientos no aprobados no aparecen (no se pueden reservar).
+    public List<ActivitySchedule> findSchedule(Long providerId, Long businessId) {
+        List<Activity> activities = activityService.findActivities(providerId).stream()
+                .filter(activity -> activity.getBusiness().isApproved())
+                .filter(activity -> businessId == null || activity.getBusiness().getId().equals(businessId))
+                .toList();
+        Map<Long, List<Slot>> slotsByActivity = slotRepository.findUpcomingForProvider(providerId, SlotStatus.ACTIVE,
+                        LocalDateTime.now(clock), Pageable.unpaged()).stream()
+                .collect(Collectors.groupingBy(slot -> slot.getActivity().getId()));
+        List<Long> slotIds = slotsByActivity.values().stream().flatMap(List::stream).map(Slot::getId).toList();
+        Map<Long, Long> reservationsBySlot = slotIds.isEmpty() ? Map.of()
+                : reservationRepository.countBySlots(slotIds, ACTIVE).stream()
+                .collect(Collectors.toMap(ReservationRepository.SlotReservationCount::getSlotId,
+                        ReservationRepository.SlotReservationCount::getReservations));
+        return activities.stream()
+                .map(activity -> new ActivitySchedule(activity, slotsByActivity.getOrDefault(activity.getId(), List.of())
+                        .stream()
+                        .map(slot -> new ScheduledSlot(slot, reservationsBySlot.getOrDefault(slot.getId(), 0L)))
+                        .toList()))
+                .toList();
+    }
+
+    // Una actividad con sus proximos horarios (en orden de fecha)
+    public record ActivitySchedule(Activity activity, List<ScheduledSlot> slots) {
+
+        public int reservedSeats() {
+            return slots.stream().mapToInt(item -> item.slot().getReservedSeats()).sum();
+        }
+
+        public int capacity() {
+            return slots.stream().mapToInt(item -> item.slot().getMaxCapacity()).sum();
+        }
+
+        public long reservations() {
+            return slots.stream().mapToLong(ScheduledSlot::reservations).sum();
+        }
+    }
+
+    // Un horario y cuantas reservas vigentes (confirmadas o pendientes de pago) tiene
+    public record ScheduledSlot(Slot slot, long reservations) {
+
+        // Porcentaje de la capacidad ocupado, para la barra
+        public int occupancyPercent() {
+            return slot.getReservedSeats() * 100 / slot.getMaxCapacity();
         }
     }
 

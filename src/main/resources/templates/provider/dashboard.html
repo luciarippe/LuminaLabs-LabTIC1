@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
-<!-- Panel del prestador: resumen de sus emprendimientos, actividades y proximos horarios -->
-<head th:replace="~{fragments/layout :: head('Mi espacio')}"></head>
+<!-- Inicio del prestador: solo lo del dia a dia. Tres numeros, las proximas salidas con reservas y las ultimas
+     reservas recibidas. El resto (emprendimientos, cuenta, etc.) esta en el menu lateral. -->
+<head th:replace="~{fragments/layout :: head('Inicio')}"></head>
 <body>
 <div class="admin-shell">
     <aside th:replace="~{fragments/provider :: sidebar('dashboard')}"></aside>
@@ -11,11 +12,8 @@
             <div>
                 <span class="admin-eyebrow" th:text="${#temporals.format(#temporals.createNow(), 'EEEE d ''de'' MMMM')}">Lunes 19 de octubre</span>
                 <h1 th:text="|Hola, ${currentUser.displayName}|">Hola</h1>
-                <p>Desde acá gestionás tus emprendimientos, sus actividades y sus fechas.</p>
             </div>
-            <a class="btn btn--primary" th:if="${approvedCount > 0}" th:href="@{/provider/activities/new}">
-                <svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg> Nueva actividad
-            </a>
+            <a class="btn btn--primary" th:if="${approvedCount > 0}" th:href="@{/provider/activities/new}">Nueva actividad</a>
         </div>
 
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
@@ -25,161 +23,91 @@
                 vas a poder publicar actividades. Te avisamos por correo.</div>
         </div>
 
-        <!-- Aviso: actividades sin horarios proximos o con el ultimo dentro de menos de runningOutDays dias.
-             Solo el aviso; la lista de cuales son esta en "Mis actividades" filtrada (?runningOut=true). -->
-        <section class="runout-panel runout-panel--compact" th:unless="${runningOut.isEmpty()}">
-            <div class="runout-panel__head">
-                <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('alert', '')}"></svg></span>
-                <div>
-                    <h2 th:text="${runningOut.size() == 1} ? 'A 1 actividad se le terminan los horarios' : |A ${runningOut.size()} actividades se les terminan los horarios|">Horarios por terminarse</h2>
-                    <p th:text="|Cuando se acaban las fechas, los turistas ya no pueden reservar. Cargá más horarios con tiempo: te avisamos cuando quedan menos de ${runningOutDays} días.|">Texto</p>
-                </div>
-                <a class="btn btn--sm btn--primary" th:href="@{/provider/activities(runningOut=true)}"
-                   th:text="${runningOut.size() == 1} ? 'Ver la actividad' : 'Ver las actividades'">Ver las actividades</a>
-            </div>
-        </section>
+        <!-- Aviso: actividades sin horarios proximos o con el ultimo dentro de menos de runningOutDays dias -->
+        <div class="notice-bar" role="status" th:unless="${runningOut.isEmpty()}">
+            <svg th:replace="~{fragments/icons :: icon-sized('alert', 'icon--sm')}"></svg>
+            <span th:text="${runningOut.size() == 1} ? '1 actividad se está quedando sin horarios para reservar.'
+                    : |${runningOut.size()} actividades se están quedando sin horarios para reservar.|">Aviso</span>
+            <a th:href="@{/provider/activities(runningOut=true)}">Cargar horarios</a>
+        </div>
 
-        <div class="kpi-grid">
-            <a class="kpi" th:href="@{/provider/businesses}">
-                <span class="kpi__top">
-                    <span class="kpi__label">Emprendimientos aprobados</span>
-                    <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('building', '')}"></svg></span>
-                </span>
-                <span class="kpi__value" th:text="${approvedCount}">0</span>
-                <span class="kpi__link">
-                    <span th:text="${businesses.size() == 1} ? 'De 1 registrado' : |De ${businesses.size()} registrados|">De 1</span>
-                    <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg>
-                </span>
+        <div class="stat-row">
+            <a class="stat" th:href="@{/provider/reservations}">
+                <span class="stat__label">Reservas vigentes</span>
+                <span class="stat__value" th:text="${activeReservations}">0</span>
+                <span class="stat__sub" th:text="${activePeople == 1} ? '1 persona en próximas salidas' : |${activePeople} personas en próximas salidas|">0 personas</span>
             </a>
-            <a class="kpi" th:href="@{/provider/activities}">
-                <span class="kpi__top">
-                    <span class="kpi__label">Actividades publicadas</span>
-                    <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></span>
-                </span>
-                <span class="kpi__value" th:text="${activityCount}">0</span>
-                <span class="kpi__link">Ver actividades <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
+            <a class="stat" th:href="@{/provider/schedule}">
+                <span class="stat__label">Horarios abiertos</span>
+                <span class="stat__value" th:text="${upcomingTotals.slots}">0</span>
+                <span class="stat__sub" th:text="${upcomingTotals.reservedSeats == 1} ? '1 lugar reservado' : |${upcomingTotals.reservedSeats} lugares reservados|">0 lugares</span>
             </a>
-            <a class="kpi" th:href="@{/provider/activities}">
-                <span class="kpi__top">
-                    <span class="kpi__label">Próximos horarios</span>
-                    <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></span>
-                </span>
-                <span class="kpi__value" th:text="${upcomingTotals.slots}">0</span>
-                <span class="kpi__link">Con lugares a la venta <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
-            </a>
-            <a class="kpi" th:href="@{/provider/activities}">
-                <span class="kpi__top">
-                    <span class="kpi__label">Lugares reservados</span>
-                    <span class="icon-chip icon-chip--slate"><svg th:replace="~{fragments/icons :: icon-sized('users', '')}"></svg></span>
-                </span>
-                <span class="kpi__value" th:text="${upcomingTotals.reservedSeats}">0</span>
-                <span class="kpi__link">En los próximos horarios <svg th:replace="~{fragments/icons :: icon-sized('arrow-right', 'icon--sm')}"></svg></span>
+            <a class="stat" th:href="@{/provider/activities}">
+                <span class="stat__label">Actividades</span>
+                <span class="stat__value" th:text="${activityCount}">0</span>
+                <span class="stat__sub">Publicadas en el portal</span>
             </a>
         </div>
 
-        <div class="admin-columns">
-            <div>
-                <section class="panel">
-                    <div class="panel__head">
-                        <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></span>
-                        <div class="panel__title">
-                            <h2>Próximos horarios</h2>
-                            <p>Las próximas fechas de todas tus actividades.</p>
-                        </div>
-                    </div>
-                    <div class="empty-state" th:if="${upcomingSlots.isEmpty()}">
-                        <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
-                        <h3>Sin fechas próximas</h3>
-                        <p th:text="${activityCount > 0} ? 'Agregá horarios a tus actividades para que los turistas puedan reservar.' : 'Publicá tu primera actividad y cargale fechas y horarios.'">Sin fechas</p>
-                        <a class="btn btn--sm" th:href="${activityCount > 0} ? @{/provider/activities} : @{/provider/activities/new}"
-                           th:if="${approvedCount > 0}" th:text="${activityCount > 0} ? 'Ir a mis actividades' : 'Publicar actividad'">Ir</a>
-                    </div>
-                    <div class="table-wrap" th:unless="${upcomingSlots.isEmpty()}">
-                        <table class="table">
-                            <thead><tr><th>Fecha</th><th>Actividad</th><th>Lugares</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
-                            <tbody>
-                            <tr th:each="slot : ${upcomingSlots}">
-                                <td>
-                                    <span class="cell-title nowrap" th:text="${#temporals.format(slot.startTime, 'EEE dd/MM')}">sáb 01/11</span>
-                                    <span class="cell-sub" th:text="${#temporals.format(slot.startTime, 'HH:mm')} + ' h'">10:00 h</span>
-                                </td>
-                                <td>
-                                    <span class="cell-title" th:text="${slot.activity.name}">Actividad</span>
-                                    <span class="cell-sub" th:text="${slot.activity.business.legalName}">Emprendimiento</span>
-                                </td>
-                                <td>
-                                    <span class="nowrap" th:text="|${slot.reservedSeats} de ${slot.maxCapacity} reservados|">0 de 12</span>
-                                    <span class="badge badge--pending" th:if="${slot.soldOut}">Completo</span>
-                                </td>
-                                <td class="cell-actions">
-                                    <a class="btn btn--sm" th:href="@{/provider/activities/{id}(id=${slot.activity.id})}">Gestionar</a>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <section class="panel">
-                    <div class="panel__head">
-                        <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('building', '')}"></svg></span>
-                        <div class="panel__title">
-                            <h2>Mis emprendimientos</h2>
-                            <p>El estado de cada uno y cuántas actividades tiene.</p>
-                        </div>
-                        <a class="btn btn--sm" th:href="@{/provider/businesses}">Ver todos</a>
-                    </div>
-                    <ul class="person-list">
-                        <li th:each="business : ${businesses}">
-                            <span class="initials" th:classappend="${@view.avatarColor(business.id)}"
-                                  th:text="${@view.initials(business.legalName)}">CE</span>
-                            <div class="person-list__main">
-                                <strong th:text="${business.legalName}">Emprendimiento</strong>
-                                <span class="small">
-                                    <span th:text="|${business.type.identifierLabel} ${business.identifier}|">RUT</span>
-                                    <span th:with="count=${activityCountByBusiness.getOrDefault(business.id, 0L)}"
-                                          th:text="${count == 1} ? '1 actividad' : |${count} actividades|">0 actividades</span>
-                                </span>
-                            </div>
-                            <span class="badge" th:classappend="${'badge--' + #strings.toLowerCase(business.status.name())}"
-                                  th:text="${business.status.label}">Aprobado</span>
-                        </li>
-                    </ul>
-                </section>
-            </div>
-
+        <div class="home-columns">
+            <!-- Proximas salidas: los proximos horarios que tienen reservas vigentes -->
             <section class="panel">
                 <div class="panel__head">
-                    <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('compass', '')}"></svg></span>
-                    <div class="panel__title"><h2>Accesos rápidos</h2></div>
+                    <div class="panel__title"><h2>Próximas salidas</h2></div>
+                    <a class="link-more" th:href="@{/provider/schedule}">Ver todos los horarios</a>
                 </div>
-                <ul class="quick-links">
-                    <li th:if="${approvedCount > 0}">
-                        <a th:href="@{/provider/activities/new}">
-                            <span class="icon-chip icon-chip--green"><svg th:replace="~{fragments/icons :: icon-sized('calendar', 'icon--sm')}"></svg></span>
-                            <span><strong>Publicar una actividad</strong><span class="small">Después le cargás fechas y precios.</span></span>
-                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
-                        </a>
+                <div class="empty-state" th:if="${nextOutings.isEmpty()}">
+                    <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
+                    <h3>Sin reservas próximas</h3>
+                    <p th:text="${upcomingTotals.slots > 0} ? 'Cuando un turista reserve uno de tus horarios lo vas a ver acá.'
+                            : 'Cargá fechas y horarios en tus actividades para que se puedan reservar.'">Texto</p>
+                </div>
+                <ul class="outing-list" th:unless="${nextOutings.isEmpty()}">
+                    <li th:each="item : ${nextOutings}" th:with="slot=${item.slot()}">
+                        <div class="resv-date" th:classappend="${item.daysLeft() <= 1} ? 'resv-date--soon'">
+                            <span class="resv-date__weekday" th:text="${#temporals.format(slot.startTime, 'EEE')}">sáb</span>
+                            <span class="resv-date__day" th:text="${#temporals.format(slot.startTime, 'dd')}">01</span>
+                            <span class="resv-date__month" th:text="${#temporals.format(slot.startTime, 'MMM')}">nov</span>
+                        </div>
+                        <div class="outing-list__main">
+                            <strong th:text="${slot.activity.name}">Actividad</strong>
+                            <span class="small muted">
+                                <th:block th:text="|${#temporals.format(slot.startTime, 'HH:mm')} h|">10:00 h</th:block>
+                                <th:block th:if="${item.daysLeft() == 0}"> · Hoy</th:block>
+                                <th:block th:if="${item.daysLeft() == 1}"> · Mañana</th:block>
+                                · <th:block th:text="${item.reservations().size() == 1} ? '1 reserva' : |${item.reservations().size()} reservas|">2 reservas</th:block>
+                            </span>
+                            <div class="seat-meter">
+                                <div class="resv-meter"><span th:style="|width: ${item.occupancyPercent()}%|"></span></div>
+                                <span class="small" th:text="|${slot.reservedSeats}/${slot.maxCapacity}|">4/12</span>
+                            </div>
+                        </div>
+                        <a class="btn btn--sm btn--ghost" th:href="@{/provider/reservations/slots/{id}/participants(id=${slot.id})}">Participantes</a>
                     </li>
-                    <li>
-                        <a th:href="@{/provider/businesses/new}">
-                            <span class="icon-chip icon-chip--navy"><svg th:replace="~{fragments/icons :: icon-sized('file-text', 'icon--sm')}"></svg></span>
-                            <span><strong>Registrar emprendimiento</strong><span class="small">Otro emprendimiento con tu misma cuenta.</span></span>
-                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
-                        </a>
-                    </li>
-                    <li>
-                        <a th:href="@{/provider/account}">
-                            <span class="icon-chip icon-chip--slate"><svg th:replace="~{fragments/icons :: icon-sized('key', 'icon--sm')}"></svg></span>
-                            <span><strong>Mi cuenta</strong><span class="small">Tus datos y tu contraseña.</span></span>
-                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
-                        </a>
-                    </li>
-                    <li>
-                        <a th:href="@{/}">
-                            <span class="icon-chip icon-chip--amber"><svg th:replace="~{fragments/icons :: icon-sized('external', 'icon--sm')}"></svg></span>
-                            <span><strong>Ver portal público</strong><span class="small">Cómo ven tus actividades los turistas.</span></span>
-                            <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm')}"></svg>
+                </ul>
+            </section>
+
+            <!-- Ultimas reservas recibidas, la mas nueva primero -->
+            <section class="panel">
+                <div class="panel__head">
+                    <div class="panel__title"><h2>Últimas reservas</h2></div>
+                    <a class="link-more" th:href="@{/provider/reservations}">Ver todas</a>
+                </div>
+                <div class="empty-state" th:if="${recentReservations.isEmpty()}">
+                    <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('ticket', '')}"></svg></div>
+                    <h3>Todavía no recibiste reservas</h3>
+                    <p>Las nuevas reservas van a aparecer acá.</p>
+                </div>
+                <ul class="recent-list" th:unless="${recentReservations.isEmpty()}">
+                    <li th:each="reservation : ${recentReservations}">
+                        <a th:href="@{/provider/reservations/{id}(id=${reservation.id})}">
+                            <span class="initials initials--round" th:classappend="${@view.avatarColor(reservation.tourist.id)}"
+                                  th:text="${@view.initials(reservation.tourist.fullName)}">SM</span>
+                            <span class="recent-list__main">
+                                <strong th:text="${reservation.tourist.fullName}">Turista</strong>
+                                <span class="small muted" th:text="|${reservation.slot.activity.name} · ${#temporals.format(reservation.slot.startTime, 'dd/MM')} · ${reservation.participantCount == 1 ? '1 persona' : reservation.participantCount + ' personas'}|">Actividad · 01/11 · 2 personas</span>
+                            </span>
+                            <span th:replace="~{fragments/reservation :: status(${reservation.status})}"></span>
                         </a>
                     </li>
                 </ul>

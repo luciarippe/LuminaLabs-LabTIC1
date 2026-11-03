@@ -10,6 +10,7 @@ import uy.edu.um.luminalabs.events.BusinessRegisteredEvent;
 import uy.edu.um.luminalabs.events.BusinessStatusChangedEvent;
 import uy.edu.um.luminalabs.events.MailRecipient;
 import uy.edu.um.luminalabs.events.ModerationEvent;
+import uy.edu.um.luminalabs.events.PasswordResetRequestedEvent;
 import uy.edu.um.luminalabs.events.ProviderTeamEvent;
 import uy.edu.um.luminalabs.events.ReservationCancelledEvent;
 import uy.edu.um.luminalabs.events.ReservationConfirmedEvent;
@@ -96,6 +97,23 @@ public class EmailNotificationListener {
                                     + "consultas, respondé a este correo."),
                     "Motivo", hidden.reason(), null, null));
         }
+    }
+
+    // Recuperar la contrasena: el enlace para elegir una nueva
+    @Async
+    @TransactionalEventListener
+    public void onPasswordResetRequested(PasswordResetRequestedEvent event) {
+        MailRecipient recipient = event.recipient();
+        emailSender.send(recipient, new EmailContent(
+                "Elegí una contraseña nueva",
+                "Recuperar tu contraseña",
+                List.of("Hola " + recipient.firstName() + ", pediste elegir una contraseña nueva para tu cuenta "
+                                + event.username() + " en Uruguay Mnatural.",
+                        "Entrá al enlace y escribí la nueva. El enlace sirve una sola vez y vence el "
+                                + event.expiresAt().format(DATE_TIME) + ".",
+                        "Si no lo pediste vos, ignorá este correo: tu contraseña no cambia."),
+                null, null,
+                "Elegir una contraseña nueva", emailSender.url("/password/reset/" + event.token())));
     }
 
     // CU-15: cambios en los prestadores de un emprendimiento

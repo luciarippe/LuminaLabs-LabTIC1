@@ -2,6 +2,7 @@ package uy.edu.um.luminalabs.services;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uy.edu.um.luminalabs.entities.Cancellation;
@@ -111,6 +112,13 @@ public class ProviderReservationService {
     // 2a: todavia no recibio ninguna reserva (si no, una lista vacia es porque no coincide con los filtros, 4a)
     public boolean hasAnyReservation(Long providerId) {
         return reservationRepository.existsForProvider(providerId);
+    }
+
+    // Panel del prestador: las ultimas reservas que recibio (sin las vencidas, que nunca se pagaron)
+    public List<Reservation> findRecent(Long providerId, int limit) {
+        return reservationRepository.findRecentForProvider(providerId, List.of(ReservationStatus.PENDING_PAYMENT,
+                ReservationStatus.CONFIRMED, ReservationStatus.FINISHED, ReservationStatus.CANCELLED),
+                PageRequest.of(0, limit));
     }
 
     // Pasos 5 y 6: el detalle de una reserva, con el turista, los participantes y el estado del pago

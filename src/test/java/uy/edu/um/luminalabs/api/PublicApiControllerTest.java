@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 // CU-17: la API publica de punta a punta (seguridad, JSON y errores), sobre H2 con los datos de demo
-// (DemoDataInitializer: emprendimientos aprobados con actividades y horarios desde manana)
+// (DemoDataInitializer: emprendimientos aprobados con actividades y horarios desde manana, ver demo/data.json)
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -36,9 +36,9 @@ class PublicApiControllerTest {
 
     @Test
     void verifiesABusinessByIdentifier() throws Exception {
-        mockMvc.perform(get("/api/v1/businesses/verification").param("identifier", "21.999999.0011"))
+        mockMvc.perform(get("/api/v1/businesses/verification").param("identifier", "21.784539.0018"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.identifier").value("219999990011"))
+                .andExpect(jsonPath("$.identifier").value("217845390018"))
                 .andExpect(jsonPath("$.verified").value(true))
                 .andExpect(jsonPath("$.business.name").value("Costa Este Experiencias"));
 
@@ -49,7 +49,7 @@ class PublicApiControllerTest {
                 .andExpect(jsonPath("$.business").value(nullValue()));
     }
 
-    // Los horarios de demo empiezan manana y se repiten cada 3 dias: en los proximos 3 dias hay alguno en Rocha
+    // Los horarios de demo empiezan manana; en Rocha hay alguna actividad todos los dias de la semana
     @Test
     void activitiesOfADayInADepartment() throws Exception {
         boolean found = false;

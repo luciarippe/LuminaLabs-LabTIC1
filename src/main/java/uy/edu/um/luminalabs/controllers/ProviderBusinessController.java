@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import uy.edu.um.luminalabs.dto.BusinessEditForm;
 import uy.edu.um.luminalabs.dto.NewBusinessForm;
 import uy.edu.um.luminalabs.dto.SocialLinksForm;
 import uy.edu.um.luminalabs.entities.Activity;
@@ -22,6 +23,7 @@ import uy.edu.um.luminalabs.entities.Department;
 import uy.edu.um.luminalabs.entities.Location;
 import uy.edu.um.luminalabs.exceptions.FieldValidationException;
 import uy.edu.um.luminalabs.security.SecurityUser;
+import uy.edu.um.luminalabs.services.BusinessEditService;
 import uy.edu.um.luminalabs.services.BusinessService;
 import uy.edu.um.luminalabs.services.LocationService;
 import uy.edu.um.luminalabs.services.ProviderActivityService;
@@ -32,8 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-// Emprendimientos del prestador: el listado con sus actividades, y CU-02 1a: registrar otro emprendimiento
-// (o volver a postular uno denegado)
+// Emprendimientos del prestador: el listado con sus actividades, corregir sus datos y sus redes, y CU-02 1a:
+// registrar otro emprendimiento (o volver a postular uno denegado)
 @Controller
 @RequestMapping("/provider/businesses")
 @RequiredArgsConstructor
@@ -44,6 +46,7 @@ public class ProviderBusinessController {
     private final BusinessService businessService;
     private final ProviderActivityService activityService;
     private final SocialLinksService socialLinksService;
+    private final BusinessEditService businessEditService;
 
     @GetMapping
     public String list(@AuthenticationPrincipal SecurityUser currentUser, Model model) {
@@ -52,6 +55,46 @@ public class ProviderBusinessController {
         model.addAttribute("businesses", businessService.findByProvider(currentUser.getId()));
         model.addAttribute("activitiesByBusiness", activitiesByBusiness);
         return "provider/businesses";
+    }
+
+    // Corregir los datos de un emprendimiento (ver BusinessEditService)
+    @GetMapping("/{id}/edit")
+    public String editForm(@AuthenticationPrincipal SecurityUser currentUser, @PathVariable Long id, Model model,
+                           RedirectAttributes redirectAttributes) {
+        try {
+            Business business = businessEditService.findEditableBusiness(currentUser.getId(), id);
+            model.addAttribute("business", business);
+            model.addAttribute("form", new BusinessEditForm(business));
+            return "provider/business-edit";
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/provider/businesses";
+        }
+    }
+
+    @PostMapping("/{id}/edit")
+    public String edit(@AuthenticationPrincipal SecurityUser currentUser, @PathVariable Long id,
+                       @Valid @ModelAttribute("form") BusinessEditForm form, BindingResult bindingResult,
+                       Model model, RedirectAttributes redirectAttributes) {
+        Business business;
+        try {
+            business = businessEditService.findEditableBusiness(currentUser.getId(), id);
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/provider/businesses";
+        }
+        if (!bindingResult.hasErrors()) {
+            try {
+                Business saved = businessEditService.update(currentUser.getId(), id, form);
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Guardamos los datos de \"" + saved.getLegalName() + "\".");
+                return "redirect:/provider/businesses";
+            } catch (FieldValidationException e) {
+                e.getFieldErrors().forEach((field, message) -> bindingResult.rejectValue(field, "invalid", message));
+            }
+        }
+        model.addAttribute("business", business);
+        return "provider/business-edit";
     }
 
     // Redes sociales de un emprendimiento del prestador (se muestran en el detalle de sus actividades)

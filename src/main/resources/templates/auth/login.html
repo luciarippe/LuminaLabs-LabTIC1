@@ -27,6 +27,10 @@
             <span th:case="'suspended'">Tu emprendimiento está <strong>suspendido</strong>. Revisá el correo que te enviamos con el motivo.</span>
             <span th:case="*">Tu cuenta no tiene emprendimientos aprobados.</span>
         </div>
+        <!-- Se cerro la sesion desde el servidor: cambio de contrasena desde otro lugar, o cuenta bloqueada -->
+        <div class="alert alert--warning" role="alert" th:if="${param.expired}">
+            Tu sesión se cerró por un cambio en tu cuenta. Volvé a iniciar sesión.
+        </div>
         <div class="alert alert--success" role="status" th:if="${param.logout}">
             Cerraste sesión correctamente.
         </div>
@@ -43,6 +47,7 @@
                     <input class="input" type="password" id="password" name="password" autocomplete="current-password" required>
                     <button type="button" class="input-group__action" data-toggle-password="password">Mostrar</button>
                 </div>
+                <a class="hint" th:href="@{/password/forgot}">¿Olvidaste tu contraseña?</a>
             </div>
             <button type="submit" class="btn btn--primary btn--lg btn--block">Ingresar</button>
         </form>

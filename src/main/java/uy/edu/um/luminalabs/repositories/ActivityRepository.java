@@ -29,6 +29,10 @@ public interface ActivityRepository extends JpaRepository<Activity, Long>, JpaSp
     @EntityGraph(attributePaths = {"business", "business.providers", "location", "categories"})
     Optional<Activity> findWithBusinessById(Long id);
 
+    // Las actividades de un emprendimiento con su localidad (al corregir sus localidades no se puede quitar una en uso)
+    @EntityGraph(attributePaths = "location")
+    List<Activity> findByBusiness_Id(Long businessId);
+
     @Query("""
             select a.location.department as department, count(a) as total
             from Activity a

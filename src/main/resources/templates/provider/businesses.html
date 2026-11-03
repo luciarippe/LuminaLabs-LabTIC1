@@ -36,6 +36,10 @@
                     <svg th:replace="~{fragments/icons :: icon-sized('users', 'icon--sm')}"></svg>
                     <span th:text="|Prestadores (${business.providers.size()})|">Prestadores (1)</span>
                 </a>
+                <a class="btn btn--sm" th:unless="${business.status.name() == 'DENIED'}"
+                   th:href="@{/provider/businesses/{id}/edit(id=${business.id})}">
+                    <svg th:replace="~{fragments/icons :: icon-sized('edit', 'icon--sm')}"></svg> Editar datos
+                </a>
                 <a class="btn btn--sm" th:href="@{/provider/businesses/{id}/social(id=${business.id})}">
                     <svg th:replace="~{fragments/icons :: icon-sized('globe', 'icon--sm')}"></svg> Redes sociales
                 </a>

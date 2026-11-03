@@ -10,7 +10,7 @@ import uy.edu.um.luminalabs.services.ProviderSlotService;
 // Datos que necesita el menu lateral en todas las paginas del espacio del prestador
 @ControllerAdvice(assignableTypes = {ProviderController.class, ProviderActivityController.class,
         ProviderBusinessController.class, ProviderAccountController.class, ProviderReservationController.class,
-        ProviderTeamController.class})
+        ProviderTeamController.class, ProviderScheduleController.class})
 @RequiredArgsConstructor
 public class ProviderModelAttributes {
 

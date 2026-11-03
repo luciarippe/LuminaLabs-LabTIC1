@@ -56,7 +56,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/activities", "/activities/**",
-                                "/login", "/register", "/register/**", "/invitations/**", "/error",
+                                "/login", "/register", "/register/**", "/invitations/**", "/password/**", "/error",
                                 "/css/**", "/js/**", "/images/**", "/photos/**").permitAll()
                         // Pasarela de pagos simulada: es "otro sistema", la llama el servidor por HTTP
                         .requestMatchers("/mock-gateway/**").permitAll()
@@ -81,11 +81,13 @@ public class SecurityConfig {
                 // CORS de la API publica (@CrossOrigin en PublicApiController): que otros sitios la puedan llamar
                 .cors(Customizer.withDefaults())
                 // Registro de las sesiones de cada usuario (sin limite de sesiones), para poder cerrarlas al
-                // bloquear una cuenta (UserSessionTerminator). Una sesion cerrada asi vuelve al login con el aviso.
+                // bloquear una cuenta o al cambiar la contrasena con el enlace del correo (UserSessionTerminator).
+                // Una sesion cerrada asi vuelve al login con un aviso; si la cuenta esta bloqueada, al volver a
+                // ingresar se ve el aviso de bloqueo.
                 .sessionManagement(session -> session
                         .maximumSessions(-1)
                         .sessionRegistry(sessionRegistry())
-                        .expiredUrl("/login?blocked"));
+                        .expiredUrl("/login?expired"));
         return http.build();
     }
 

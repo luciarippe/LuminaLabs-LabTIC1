@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<!-- Horarios abiertos de todas las actividades, agrupados por actividad, con lugares ocupados y reservas de cada uno -->
+<head th:replace="~{fragments/layout :: head('Horarios')}"></head>
+<body>
+<div class="admin-shell">
+    <aside th:replace="~{fragments/provider :: sidebar('schedule')}"></aside>
+
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div>
+                <span class="admin-eyebrow">Día a día</span>
+                <h1>Horarios</h1>
+                <p>Los horarios abiertos de cada actividad y cómo vienen las reservas.</p>
+            </div>
+            <!-- Filtro por emprendimiento: solo si tiene mas de uno -->
+            <form class="schedule-filter" th:action="@{/provider/schedule}" method="get" th:if="${businesses.size() > 1}">
+                <label class="visually-hidden" for="businessId">Emprendimiento</label>
+                <select class="select" id="businessId" name="businessId" data-auto-submit>
+                    <option value="">Todos los emprendimientos</option>
+                    <option th:each="business : ${businesses}" th:value="${business.id}" th:text="${business.legalName}"
+                            th:selected="${businessId == business.id}">Emprendimiento</option>
+                </select>
+                <noscript><button type="submit" class="btn btn--sm">Filtrar</button></noscript>
+            </form>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="stat-row" th:unless="${schedule.isEmpty()}">
+            <div class="stat">
+                <span class="stat__label">Horarios abiertos</span>
+                <span class="stat__value" th:text="${slotCount}">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Lugares reservados</span>
+                <span class="stat__value"><th:block th:text="${reservedSeats}">0</th:block><small th:text="| / ${capacity}|"> / 0</small></span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Reservas vigentes</span>
+                <span class="stat__value" th:text="${reservations}">0</span>
+            </div>
+        </div>
+
+        <section class="panel" th:if="${schedule.isEmpty()}">
+            <div class="empty-state">
+                <div class="empty-state__icon"><svg th:replace="~{fragments/icons :: icon-sized('calendar', '')}"></svg></div>
+                <h3>No hay actividades para mostrar</h3>
+                <p>Publicá una actividad y cargale fechas para ver sus horarios acá.</p>
+                <a class="btn btn--sm btn--primary" th:href="@{/provider/activities/new}">Nueva actividad</a>
+            </div>
+        </section>
+
+        <div class="schedule-list">
+            <details class="schedule-group" th:each="group : ${schedule}" th:with="activity=${group.activity()}"
+                     th:open="${group.reservations() > 0 or group.slots().isEmpty()}">
+                <summary class="schedule-group__head">
+                    <span class="schedule-group__title">
+                        <strong th:text="${activity.name}">Actividad</strong>
+                        <span class="small muted" th:text="|${activity.business.legalName} · ${activity.location.name}|">Emprendimiento · Localidad</span>
+                    </span>
+                    <span class="schedule-group__stats" th:unless="${group.slots().isEmpty()}">
+                        <span th:text="${group.slots().size() == 1} ? '1 horario' : |${group.slots().size()} horarios|">4 horarios</span>
+                        <span th:text="|${group.reservedSeats()}/${group.capacity()} lugares|">5/48 lugares</span>
+                        <span th:classappend="${group.reservations() > 0} ? 'is-highlight'"
+                              th:text="${group.reservations() == 1} ? '1 reserva' : |${group.reservations()} reservas|">2 reservas</span>
+                    </span>
+                    <span class="badge badge--pending" th:if="${group.slots().isEmpty()}">Sin horarios</span>
+                    <svg th:replace="~{fragments/icons :: icon-sized('chevron-right', 'icon--sm schedule-group__chevron')}"></svg>
+                </summary>
+
+                <div class="schedule-group__empty" th:if="${group.slots().isEmpty()}">
+                    <span class="muted">Esta actividad no tiene horarios próximos, así que nadie la puede reservar.</span>
+                    <a class="btn btn--sm btn--primary" th:href="@{/provider/activities/{id}(id=${activity.id})}">Cargar horarios</a>
+                </div>
+
+                <div class="table-wrap" th:unless="${group.slots().isEmpty()}">
+                    <table class="table schedule-table">
+                        <thead>
+                        <tr><th>Fecha</th><th>Precio</th><th>Ocupación</th><th>Reservas</th><th><span class="visually-hidden">Acciones</span></th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="item : ${group.slots()}" th:with="slot=${item.slot()}">
+                            <td>
+                                <span class="cell-title nowrap" th:text="${#temporals.format(slot.startTime, 'EEE dd/MM')}">sáb 01/11</span>
+                                <span class="cell-sub" th:text="|${#temporals.format(slot.startTime, 'HH:mm')} h|">10:00 h</span>
+                            </td>
+                            <td class="nowrap" th:text="|$ ${#numbers.formatDecimal(slot.price, 1, 'POINT', 0, 'COMMA')}|">$ 1.500</td>
+                            <td>
+                                <div class="seat-meter">
+                                    <div class="resv-meter" th:classappend="${slot.soldOut} ? 'resv-meter--full'"><span th:style="|width: ${item.occupancyPercent()}%|"></span></div>
+                                    <span class="nowrap small" th:text="|${slot.reservedSeats} de ${slot.maxCapacity}|">0 de 12</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge--pending" th:if="${slot.soldOut}">Completo</span>
+                                <span th:unless="${slot.soldOut}" th:class="${item.reservations() == 0} ? 'muted'"
+                                      th:text="${item.reservations() == 0} ? 'Sin reservas' : (${item.reservations() == 1} ? '1 reserva' : |${item.reservations()} reservas|)">2 reservas</span>
+                            </td>
+                            <td class="cell-actions">
+                                <a class="btn btn--sm btn--ghost" th:if="${item.reservations() > 0}"
+                                   th:href="@{/provider/reservations(activityId=${activity.id}, dateFrom=${slot.startTime.toLocalDate()}, dateTo=${slot.startTime.toLocalDate()})}">Ver reservas</a>
+                                <a class="btn btn--sm btn--ghost"
+                                   th:href="@{/provider/activities/{id}/slots/{slotId}/edit(id=${activity.id}, slotId=${slot.id})}">Modificar</a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="schedule-group__foot" th:unless="${group.slots().isEmpty()}">
+                    <a th:href="@{/provider/activities/{id}(id=${activity.id})}">Gestionar la actividad y agregar horarios</a>
+                </div>
+            </details>
+        </div>
+    </main>
+</div>
+</body>
+</html>

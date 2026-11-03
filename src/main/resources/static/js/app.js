@@ -1,4 +1,84 @@
 // Comportamientos chicos de la interfaz. La pagina funciona igual sin JavaScript.
+
+// Movimiento (solo decorativo; motion-init.js pone .js-motion en <html> si corresponde). Los elementos de REVEAL
+// entran desde abajo al aparecer en pantalla, de a uno; el titulo de la portada entra palabra por palabra; los
+// numeros de los paneles cuentan hasta su valor; y el encabezado marca una sombra al bajar. La lista de REVEAL
+// tiene que coincidir con la de la seccion "Movimiento" de styles.css.
+(() => {
+    const root = document.documentElement;
+    if (!root.classList.contains("js-motion")) return;
+    window.motionReady = true;
+
+    const REVEAL = ".section__header, .activity-card, .destination, .value, .provider-band, .marquee, .page-header, "
+        + ".card, .stat, .kpi, .panel, .resv-card, .schedule-group, .admin-topbar";
+    const STAGGER_MS = 70;
+    const MAX_DELAY_MS = 420;
+
+    const revealObserver = new IntersectionObserver(entries => {
+        entries.filter(entry => entry.isIntersecting).forEach((entry, index) => {
+            const element = entry.target;
+            element.style.transitionDelay = `${Math.min(index * STAGGER_MS, MAX_DELAY_MS)}ms`;
+            element.classList.add("is-revealing", "is-visible");
+            revealObserver.unobserve(element);
+            // Despues de entrar se sacan la demora y la transicion de entrada, para que el hover responda al instante
+            setTimeout(() => {
+                element.classList.remove("is-revealing");
+                element.style.transitionDelay = "";
+            }, 1200);
+        });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    document.querySelectorAll(REVEAL).forEach(element => revealObserver.observe(element));
+
+    // Titulo de la portada: cada palabra en su propio renglon oculto, para que suba desde abajo
+    document.querySelectorAll(".hero h1").forEach(title => {
+        const words = title.textContent.trim().split(/\s+/);
+        title.setAttribute("aria-label", title.textContent.trim());
+        title.innerHTML = "";
+        words.forEach((word, index) => {
+            const outer = document.createElement("span");
+            outer.className = "word";
+            outer.setAttribute("aria-hidden", "true");
+            const inner = document.createElement("span");
+            inner.textContent = word;
+            inner.style.setProperty("--i", index);
+            outer.appendChild(inner);
+            title.append(outer, " ");
+        });
+        title.classList.add("is-split");
+    });
+
+    // Numeros de los paneles (solo los que son un numero entero solo): cuentan desde 0 al aparecer
+    const countObserver = new IntersectionObserver(entries => {
+        entries.filter(entry => entry.isIntersecting).forEach(entry => {
+            const element = entry.target;
+            countObserver.unobserve(element);
+            const target = Number(element.dataset.countTo);
+            const duration = 900;
+            const start = performance.now();
+            const step = now => {
+                const progress = Math.min((now - start) / duration, 1);
+                element.textContent = String(Math.round(target * (1 - Math.pow(1 - progress, 3))));
+                if (progress < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        });
+    });
+    document.querySelectorAll(".stat__value, .kpi__value").forEach(element => {
+        if (/^\d+$/.test(element.textContent.trim()) && Number(element.textContent.trim()) > 0) {
+            element.dataset.countTo = element.textContent.trim();
+            element.textContent = "0";
+            countObserver.observe(element);
+        }
+    });
+
+    // Encabezado: sombra suave cuando la pagina ya no esta arriba de todo
+    const header = document.querySelector(".site-header");
+    if (header) {
+        const update = () => header.classList.toggle("is-scrolled", window.scrollY > 8);
+        window.addEventListener("scroll", update, { passive: true });
+        update();
+    }
+})();
 document.addEventListener("DOMContentLoaded", () => {
 
     // Selects que aplican el cambio al elegir una opcion (ej. "Ordenar por" del catalogo)
@@ -473,7 +553,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateIdentifier();
 
     // Texto de ayuda del numero de cuenta segun el banco elegido (formato en el data-hint de cada opcion)
-    const bankSelect = document.querySelector("select[name$='.bank']");
+    const bankSelect = document.querySelector("select[name$='.bank'], select[name='bank']");
     const accountHint = document.getElementById("account-hint");
     if (bankSelect && accountHint) {
         const defaultHint = accountHint.textContent;

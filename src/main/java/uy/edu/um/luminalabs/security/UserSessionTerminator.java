@@ -5,9 +5,9 @@ import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Component;
 
-// Cierra las sesiones abiertas de un usuario (al bloquear su cuenta). Spring Security guarda en el SessionRegistry
-// las sesiones de cada usuario logueado (ver SecurityConfig); una sesion marcada como vencida se cierra en el
-// proximo pedido y la persona vuelve al login con el aviso de cuenta bloqueada.
+// Cierra las sesiones abiertas de un usuario (al bloquear su cuenta o al cambiar la contrasena con el enlace del
+// correo). Spring Security guarda en el SessionRegistry las sesiones de cada usuario logueado (ver SecurityConfig);
+// una sesion marcada como vencida se cierra en el proximo pedido y la persona vuelve al login con un aviso.
 @Component
 @RequiredArgsConstructor
 public class UserSessionTerminator {

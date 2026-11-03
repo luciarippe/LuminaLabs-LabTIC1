@@ -1,6 +1,7 @@
 package uy.edu.um.luminalabs.repositories;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -61,6 +62,27 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             select count(r) > 0 from Reservation r join r.slot s join s.activity a join a.business b join b.providers p
             where p.id = :providerId""")
     boolean existsForProvider(Long providerId);
+
+    // Panel del prestador: las ultimas reservas recibidas en sus actividades, la mas nueva primero
+    @Query("""
+            select r from Reservation r join fetch r.tourist join fetch r.slot s join fetch s.activity a
+            join a.business b join b.providers p
+            where p.id = :providerId and r.status in :statuses
+            order by r.createdAt desc""")
+    List<Reservation> findRecentForProvider(Long providerId, Collection<ReservationStatus> statuses, Pageable pageable);
+
+    // Horarios del prestador: cuantas reservas tiene cada horario en los estados pedidos (sin reservas no aparece)
+    @Query("""
+            select r.slot.id as slotId, count(r) as reservations from Reservation r
+            where r.slot.id in :slotIds and r.status in :statuses
+            group by r.slot.id""")
+    List<SlotReservationCount> countBySlots(Collection<Long> slotIds, Collection<ReservationStatus> statuses);
+
+    interface SlotReservationCount {
+        Long getSlotId();
+
+        long getReservations();
+    }
 
     // CU-09 6a: reservas de un horario con sus participantes, para la lista consolidada
     @EntityGraph(attributePaths = {"tourist", "participants"})
