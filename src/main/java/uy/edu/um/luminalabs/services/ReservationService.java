@@ -164,7 +164,7 @@ public class ReservationService {
             int cutoff = slot.getActivity().getBookingCutoffMinutes();
             throw new ReservationNotPossibleException(cutoff == 0
                     ? "Ese horario ya comenzó. Elegí otro."
-                    : "Este horario se puede reservar hasta " + cutoff + " minutos antes del inicio. Elegí otro.",
+                    : "Este horario se puede reservar hasta " + slot.getActivity().getBookingCutoffLabel() + " antes del inicio. Elegí otro.",
                     activityId);
         }
         if (participants > slot.getAvailability()) {

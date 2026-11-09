@@ -15,7 +15,10 @@
     </div>
     <div class="field">
         <label for="time">Hora de inicio</label>
-        <input class="input" type="time" th:field="*{time}" th:errorclass="is-invalid">
+        <select class="select" th:field="*{time}" th:errorclass="is-invalid">
+            <option value="" th:if="${slotForm.time == null}">Elegí la hora</option>
+            <option th:each="option : ${slotTimeOptions}" th:value="${option.value}" th:text="${option.label}">10:00 h</option>
+        </select>
         <span class="field-error" th:if="${#fields.hasErrors('time')}" th:errors="*{time}"></span>
     </div>
     <div class="field">

@@ -85,9 +85,12 @@
                         <span class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></span>
                     </div>
                     <div class="field">
-                        <label for="durationMinutes">Duración (en minutos)</label>
-                        <input class="input" type="number" th:field="*{durationMinutes}" th:errorclass="is-invalid" min="10" step="5">
-                        <span class="hint">Ej.: 90 para una hora y media.</span>
+                        <label for="durationMinutes">Duración (en horas)</label>
+                        <select class="select" th:field="*{durationMinutes}" th:errorclass="is-invalid">
+                            <option value="" th:if="${form.durationMinutes == null}">Elegí la duración</option>
+                            <option th:each="option : ${durationOptions}" th:value="${option.value}" th:text="${option.label}">1,5 h</option>
+                        </select>
+                        <span class="hint">De a media hora: 1,5 h es una hora y media.</span>
                         <span class="field-error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}"></span>
                     </div>
                     <div class="field">
@@ -208,15 +211,19 @@
                 </div>
                 <div class="form-grid">
                     <div class="field span-2">
-                        <label for="bookingCutoffMinutes">Se puede reservar hasta (minutos antes del inicio)</label>
-                        <input class="input" type="number" th:field="*{bookingCutoffMinutes}" th:errorclass="is-invalid" min="0">
-                        <span class="hint">0 = se puede reservar hasta la hora de inicio.</span>
+                        <label for="bookingCutoffMinutes">Se puede reservar hasta (horas antes del inicio)</label>
+                        <select class="select" th:field="*{bookingCutoffMinutes}" th:errorclass="is-invalid">
+                            <option th:each="option : ${bookingCutoffOptions}" th:value="${option.value}" th:text="${option.label}">1 h</option>
+                        </select>
+                        <span class="hint">0 h = se puede reservar hasta la hora de inicio.</span>
                         <span class="field-error" th:if="${#fields.hasErrors('bookingCutoffMinutes')}" th:errors="*{bookingCutoffMinutes}"></span>
                     </div>
                     <div class="field">
-                        <label for="cancellationDeadlineHours">Plazo para cancelar con devolución (horas antes)</label>
-                        <input class="input" type="number" th:field="*{cancellationDeadlineHours}" th:errorclass="is-invalid" min="0">
-                        <span class="field-error" th:if="${#fields.hasErrors('cancellationDeadlineHours')}" th:errors="*{cancellationDeadlineHours}"></span>
+                        <label for="cancellationDeadlineMinutes">Plazo para cancelar con devolución (horas antes)</label>
+                        <select class="select" th:field="*{cancellationDeadlineMinutes}" th:errorclass="is-invalid">
+                            <option th:each="option : ${cancellationDeadlineOptions}" th:value="${option.value}" th:text="${option.label}">24 h</option>
+                        </select>
+                        <span class="field-error" th:if="${#fields.hasErrors('cancellationDeadlineMinutes')}" th:errors="*{cancellationDeadlineMinutes}"></span>
                     </div>
                     <div class="field">
                         <label for="cancellationFeePercentage">Cargo por cancelar dentro del plazo (%)</label>
