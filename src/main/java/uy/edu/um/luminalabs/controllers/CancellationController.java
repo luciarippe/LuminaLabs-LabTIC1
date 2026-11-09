@@ -10,15 +10,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import uy.edu.um.luminalabs.entities.Cancellation;
+import uy.edu.um.luminalabs.entities.Payment;
 import uy.edu.um.luminalabs.entities.PaymentStatus;
 import uy.edu.um.luminalabs.security.SecurityUser;
 import uy.edu.um.luminalabs.services.CancellationService;
 import uy.edu.um.luminalabs.services.ReservationService;
-
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 
 // CU-05: el turista cancela una reserva. Esta bajo /reservations, asi que solo entran turistas.
 @Controller
@@ -28,6 +24,7 @@ public class CancellationController {
 
     private final ReservationService reservationService;
     private final CancellationService cancellationService;
+    private final ViewHelper view;
 
     // Pasos 1 y 2: se muestra la politica y cuanto se devolveria, antes de confirmar
     @GetMapping
@@ -56,19 +53,24 @@ public class CancellationController {
         return "redirect:/reservations/" + id;
     }
 
-    private static String resultMessage(Cancellation cancellation) {
-        if (cancellation.getRefundPayment() == null) {
+    private String resultMessage(Cancellation cancellation) {
+        Payment refund = cancellation.getRefundPayment();
+        if (refund == null) {
             return "Cancelamos tu reserva y liberamos los lugares.";
         }
-        String amount = "$ " + money(cancellation.getRefundAmount());
-        return cancellation.getRefundPayment().getStatus() == PaymentStatus.APPROVED
-                ? "Cancelamos tu reserva. La devolución de " + amount + " ya fue aprobada."
-                // 8a: la reserva queda cancelada igual y la devolucion se reintenta sola
-                : "Cancelamos tu reserva. La devolución de " + amount + " quedó en proceso: la pasarela no la "
-                + "confirmó todavía y la vamos a reintentar automáticamente.";
+        String gateway = view.gatewayName();
+        if (refund.getStatus() == PaymentStatus.APPROVED) {
+            // El movimiento tal como lo informo la pasarela: la devolucion es un monto negativo
+            return "Cancelamos tu reserva. " + capitalize(gateway) + " confirmó la devolución: "
+                    + view.signedMoney(refund.getSignedAmount()) + " a la tarjeta terminada en "
+                    + refund.getCardLastDigits() + ".";
+        }
+        // 8a: la reserva queda cancelada igual y la devolucion se reintenta sola
+        return "Cancelamos tu reserva. La devolución de $ " + ViewHelper.money(cancellation.getRefundAmount())
+                + " quedó en proceso: " + gateway + " no la confirmó todavía y la vamos a reintentar automáticamente.";
     }
 
-    private static String money(BigDecimal amount) {
-        return new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(Locale.forLanguageTag("es-UY"))).format(amount);
+    private static String capitalize(String text) {
+        return Character.toUpperCase(text.charAt(0)) + text.substring(1);
     }
 }

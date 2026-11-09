@@ -109,9 +109,9 @@
             <section class="detail-section">
                 <h2>Política de cancelación</h2>
                 <p th:if="${activity.cancellationFeePercentage == 0}"
-                   th:text="|Cancelación gratuita hasta ${activity.cancellationDeadlineHours} horas antes del inicio. Después de ese plazo no hay devolución.|">Texto</p>
+                   th:text="|Cancelación gratuita hasta ${activity.cancellationDeadlineLabel} antes del inicio. Después de ese plazo no hay devolución.|">Texto</p>
                 <p th:unless="${activity.cancellationFeePercentage == 0}"
-                   th:text="|Si cancelás hasta ${activity.cancellationDeadlineHours} horas antes del inicio, se te devuelve el monto menos un cargo del ${activity.cancellationFeePercentage}%. Después de ese plazo no hay devolución.|">Texto</p>
+                   th:text="|Si cancelás hasta ${activity.cancellationDeadlineLabel} antes del inicio, se te devuelve el monto menos un cargo del ${activity.cancellationFeePercentage}%. Después de ese plazo no hay devolución.|">Texto</p>
             </section>
 
             <section class="detail-section">

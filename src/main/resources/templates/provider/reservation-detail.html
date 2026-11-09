@@ -123,9 +123,11 @@
                         <ul>
                             <li th:each="item : ${detail.payments()}">
                                 <span>
-                                    <span th:text="|${item.type.label} · $ ${#numbers.formatDecimal(item.amount, 1, 'POINT', 0, 'COMMA')}|">Cobro · $ 3.000</span>
+                                    <span th:text="${item.type.label}">Cobro</span>
                                     <small th:text="${#temporals.format(item.createdAt, 'dd/MM HH:mm')}">17/10 21:00</small>
                                 </span>
+                                <strong class="payment-amount nowrap" th:classappend="${item.refund} ? 'payment-amount--refund'"
+                                        th:text="${@view.signedMoney(item.signedAmount)}">+ $ 3.000</strong>
                                 <span class="badge"
                                       th:classappend="${item.status.name() == 'APPROVED'} ? 'badge--approved' : (${item.status.name() == 'REJECTED'} ? 'badge--denied' : 'badge--pending')"
                                       th:text="${item.status.label}">Aprobado</span>

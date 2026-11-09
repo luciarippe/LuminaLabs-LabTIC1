@@ -74,7 +74,13 @@ public class HttpPaymentGateway implements PaymentGateway {
         try {
             GatewayPayment response = restClient.post().uri("/v1/refunds").body(request)
                     .retrieve().body(GatewayPayment.class);
-            return toResult(response);
+            GatewayResult result = toResult(response);
+            if (result.outcome() != Outcome.APPROVED) {
+                return result;
+            }
+            // La pasarela informa la devolucion como un movimiento negativo; si no manda el monto, es el pedido
+            BigDecimal amount = response.amount() != null ? response.amount() : request.amount();
+            return new GatewayResult(Outcome.APPROVED, result.externalId(), amount.abs().negate());
         } catch (HttpClientErrorException e) {
             log.warn("Gateway rejected refund {}: {}", request.reference(), e.getStatusCode());
             return GatewayResult.of(Outcome.DECLINED);
@@ -109,6 +115,6 @@ public class HttpPaymentGateway implements PaymentGateway {
     }
 
     // Respuesta JSON de la pasarela
-    record GatewayPayment(String id, String reference, String status) {
+    record GatewayPayment(String id, String reference, String status, BigDecimal amount) {
     }
 }

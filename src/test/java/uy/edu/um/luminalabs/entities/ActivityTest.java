@@ -13,12 +13,12 @@ class ActivityTest {
     void durationLabel() {
         Activity activity = new Activity();
 
-        activity.setDurationMinutes(45);
-        assertEquals("45 min", activity.getDurationLabel());
+        activity.setDurationMinutes(30);
+        assertEquals("0,5 h", activity.getDurationLabel());
         activity.setDurationMinutes(180);
         assertEquals("3 h", activity.getDurationLabel());
         activity.setDurationMinutes(150);
-        assertEquals("2 h 30 min", activity.getDurationLabel());
+        assertEquals("2,5 h", activity.getDurationLabel());
     }
 
     @Test

@@ -63,6 +63,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             where p.id = :providerId""")
     boolean existsForProvider(Long providerId);
 
+    // Una actividad solo se puede borrar si nunca tuvo reservas (en ningun estado)
+    boolean existsBySlot_Activity_Id(Long activityId);
+
+    // Ids de las actividades (de entre las pedidas) que tienen al menos una reserva, en cualquier estado
+    @Query("select distinct r.slot.activity.id from Reservation r where r.slot.activity.id in :activityIds")
+    List<Long> findActivityIdsWithReservations(Collection<Long> activityIds);
+
     // Panel del prestador: las ultimas reservas recibidas en sus actividades, la mas nueva primero
     @Query("""
             select r from Reservation r join fetch r.tourist join fetch r.slot s join fetch s.activity a

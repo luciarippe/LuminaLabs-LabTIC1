@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import uy.edu.um.luminalabs.dto.ActivityForm;
+import uy.edu.um.luminalabs.dto.HalfHourOption;
 import uy.edu.um.luminalabs.dto.SlotForm;
 import uy.edu.um.luminalabs.dto.SlotRepetition;
 import uy.edu.um.luminalabs.entities.Activity;
@@ -77,6 +78,7 @@ public class ProviderActivityController {
         model.addAttribute("runningOutDays", ProviderSlotService.RUNNING_OUT_DAYS);
         model.addAttribute("summaries", slotService.summarize(activities));
         model.addAttribute("canPublish", !activityService.findPublishableBusinesses(currentUser.getId()).isEmpty());
+        model.addAttribute("deletableIds", activityService.findDeletableIds(activities));
         // Las que tienen los horarios por terminarse llevan una etiqueta junto a la proxima fecha
         model.addAttribute("runningOutById", runningOutItems.stream()
                 .collect(Collectors.toMap(item -> item.activity().getId(), Function.identity())));
@@ -102,7 +104,7 @@ public class ProviderActivityController {
         }
         // Valores sugeridos para las condiciones de reserva y cancelacion (RF-10)
         form.setBookingCutoffMinutes(60);
-        form.setCancellationDeadlineHours(24);
+        form.setCancellationDeadlineMinutes(24 * 60);
         form.setCancellationFeePercentage(0);
         model.addAttribute("form", form);
         return showActivityForm(currentUser, null, model);
@@ -154,6 +156,20 @@ public class ProviderActivityController {
         return showActivityForm(currentUser, activity, model);
     }
 
+    // Borrar una actividad: solo si no tiene ninguna reserva (ver ProviderActivityService.delete)
+    @PostMapping("/{id}/delete")
+    public String delete(@AuthenticationPrincipal SecurityUser currentUser, @PathVariable Long id,
+                         RedirectAttributes redirectAttributes) {
+        try {
+            String name = activityService.delete(currentUser.getId(), id);
+            redirectAttributes.addFlashAttribute("successMessage", "Borramos la actividad \"" + name + "\".");
+            return "redirect:/provider/activities";
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/provider/activities/" + id;
+        }
+    }
+
     // activity == null: alta; si no, edicion (el emprendimiento ya no se puede cambiar)
     private String showActivityForm(SecurityUser currentUser, Activity activity, Model model) {
         model.addAttribute("activity", activity);
@@ -163,6 +179,14 @@ public class ProviderActivityController {
         // Limites de las fotos, para los textos y los controles de app.js
         model.addAttribute("maxPhotos", Activity.MAX_PHOTOS);
         model.addAttribute("maxPhotoMb", ImageProcessor.MAX_BYTES / 1024 / 1024);
+        // Tiempos en horas, de a media hora (se guarda el valor en minutos)
+        ActivityForm form = (ActivityForm) model.getAttribute("form");
+        model.addAttribute("durationOptions", HalfHourOption.durations(ActivityForm.MIN_DURATION_MINUTES,
+                ActivityForm.MAX_DURATION_MINUTES, form == null ? null : form.getDurationMinutes()));
+        model.addAttribute("bookingCutoffOptions", HalfHourOption.durations(0, ActivityForm.MAX_NOTICE_MINUTES,
+                form == null ? null : form.getBookingCutoffMinutes()));
+        model.addAttribute("cancellationDeadlineOptions", HalfHourOption.durations(0, ActivityForm.MAX_NOTICE_MINUTES,
+                form == null ? null : form.getCancellationDeadlineMinutes()));
         return "provider/activity-form";
     }
 
@@ -179,6 +203,12 @@ public class ProviderActivityController {
     @ModelAttribute("lastSlotDate")
     public LocalDate lastSlotDate() {
         return slotService.lastAllowedDate();
+    }
+
+    // Horas de inicio de los horarios: de a media hora
+    @ModelAttribute("slotTimeOptions")
+    public List<HalfHourOption> slotTimeOptions() {
+        return HalfHourOption.timesOfDay(null);
     }
 
     @ModelAttribute("repetitions")
@@ -243,6 +273,7 @@ public class ProviderActivityController {
         form.setMaxCapacity(slot.getMaxCapacity());
         model.addAttribute("slotForm", form);
         model.addAttribute("slot", slot);
+        model.addAttribute("slotTimeOptions", HalfHourOption.timesOfDay(form.getTime()));
         return "provider/slot-edit";
     }
 
@@ -297,6 +328,7 @@ public class ProviderActivityController {
         model.addAttribute("runningOut", slotService.findRunningOut(List.of(activity)).stream().findFirst().orElse(null));
         model.addAttribute("upcomingSlots", slotsByStarted.get(false));
         model.addAttribute("pastSlots", slotsByStarted.get(true).reversed());
+        model.addAttribute("canDelete", activityService.canDelete(activity));
         return "provider/activity-manage";
     }
 

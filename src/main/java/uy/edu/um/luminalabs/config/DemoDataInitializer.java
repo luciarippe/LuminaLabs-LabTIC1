@@ -140,7 +140,7 @@ public class DemoDataInitializer implements ApplicationRunner {
         activity.setImportantDetails(data.importantDetails());
         // Condiciones algo distintas entre actividades, como las pondria cada prestador
         activity.setBookingCutoffMinutes(index % 3 == 0 ? 60 : 120);
-        activity.setCancellationDeadlineHours(index % 2 == 0 ? 24 : 48);
+        activity.setCancellationDeadlineMinutes((index % 2 == 0 ? 24 : 48) * 60);
         activity.setCancellationFeePercentage(index % 4 == 0 ? 0 : 20);
         data.categories().stream().map(name -> require(categories, name)).forEach(activity.getCategories()::add);
         if (loadPhotos) {

@@ -193,7 +193,8 @@ class MercadoPagoPaymentGatewayTest {
 
         GatewayResult result = gateway.refund(new RefundRequest("REF-1", "ORD01", new BigDecimal("3000.00"), "UYU"));
 
-        assertEquals(new GatewayResult(Outcome.APPROVED, "ORD01"), result);
+        // Sin el detalle de la devolucion en la respuesta, se informa el monto pedido en negativo
+        assertEquals(new GatewayResult(Outcome.APPROVED, "ORD01", new BigDecimal("-3000.00")), result);
         Received request = received.get("POST /v1/orders/ORD01/refund");
         assertEquals("REF-1", request.idempotencyKey());
         assertEquals("", request.body());
@@ -204,11 +205,14 @@ class MercadoPagoPaymentGatewayTest {
     void partialRefund() {
         orderToRefund();
         replies.put("POST /v1/orders/ORD01/refund", new Reply(201,
-                "{\"id\":\"ORD01\",\"status\":\"processed\",\"status_detail\":\"partially_refunded\"}"));
+                "{\"id\":\"ORD01\",\"status\":\"processed\",\"status_detail\":\"partially_refunded\","
+                        + "\"transactions\":{\"refunds\":[{\"id\":\"REF01\",\"transaction_id\":\"PAY01\",\"amount\":\"2400.00\",\"status\":\"processed\"}]}}"));
 
         GatewayResult result = gateway.refund(new RefundRequest("REF-2", "ORD01", new BigDecimal("2400"), "UYU"));
 
         assertEquals(Outcome.APPROVED, result.outcome());
+        // Mercado Pago informa la devolucion en positivo; la aplicacion la registra como movimiento negativo
+        assertEquals(new BigDecimal("-2400.00"), result.amount());
         String body = received.get("POST /v1/orders/ORD01/refund").body();
         assertTrue(body.contains("\"id\":\"PAY01\""));
         assertTrue(body.contains("\"amount\":\"2400.00\""));

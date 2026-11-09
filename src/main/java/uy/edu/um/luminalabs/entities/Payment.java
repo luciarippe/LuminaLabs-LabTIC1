@@ -57,6 +57,10 @@ public class Payment {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    // Devoluciones: el monto que informo la pasarela al confirmarla, en negativo (ver V17)
+    @Column(name = "gateway_amount", precision = 12, scale = 2)
+    private BigDecimal gatewayAmount;
+
     // Cuando se supo el resultado (null mientras esta sin respuesta)
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
@@ -92,6 +96,25 @@ public class Payment {
         this.status = PaymentStatus.APPROVED;
         this.externalId = externalId;
         this.resolvedAt = now;
+    }
+
+    // Devolucion confirmada por la pasarela. "gatewayAmount" es el movimiento que informo (negativo); si no
+    // informo ninguno, se registra el monto pedido en negativo.
+    public void approveRefund(String externalId, BigDecimal gatewayAmount, LocalDateTime now) {
+        approve(externalId, now);
+        this.gatewayAmount = gatewayAmount != null ? gatewayAmount : amount.negate();
+    }
+
+    public boolean isRefund() {
+        return type == PaymentType.REFUND;
+    }
+
+    // El movimiento con signo, para mostrarlo como en un estado de cuenta: cobro +2000, devolucion -1800
+    public BigDecimal getSignedAmount() {
+        if (!isRefund()) {
+            return amount;
+        }
+        return gatewayAmount != null ? gatewayAmount : amount.negate();
     }
 
     public void reject(String externalId, LocalDateTime now) {

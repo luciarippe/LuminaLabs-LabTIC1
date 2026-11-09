@@ -90,9 +90,11 @@ public class MockPaymentGatewayController {
             log.info("[mock-gateway] refund {} failed on purpose", request.reference());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         }
-        StoredPayment refund = new StoredPayment(UUID.randomUUID().toString(), request.reference(), "APPROVED", request.amount());
+        // Como en un estado de cuenta, la devolucion queda como un movimiento con monto negativo
+        StoredPayment refund = new StoredPayment(UUID.randomUUID().toString(), request.reference(), "APPROVED",
+                request.amount().abs().negate());
         paymentsByReference.put(request.reference(), refund);
-        log.info("[mock-gateway] refund {} APPROVED {}", request.reference(), request.amount());
+        log.info("[mock-gateway] refund {} APPROVED {}", request.reference(), refund.amount());
         return ResponseEntity.status(HttpStatus.CREATED).body(refund);
     }
 

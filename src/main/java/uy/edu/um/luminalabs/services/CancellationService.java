@@ -95,7 +95,7 @@ public class CancellationService {
             return new CancellationQuote(Case.SCHEDULE_CHANGED, paid, ZERO, paid);
         }
         Activity activity = reservation.getSlot().getActivity();
-        LocalDateTime deadline = reservation.getSlot().getStartTime().minusHours(activity.getCancellationDeadlineHours());
+        LocalDateTime deadline = reservation.getSlot().getStartTime().minusMinutes(activity.getCancellationDeadlineMinutes());
         if (now.isAfter(deadline)) {
             return new CancellationQuote(Case.OUTSIDE_DEADLINE, paid, paid, ZERO);
         }

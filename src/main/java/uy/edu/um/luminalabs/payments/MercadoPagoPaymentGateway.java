@@ -131,7 +131,7 @@ public class MercadoPagoPaymentGateway implements PaymentGateway {
                 refundCall.body(new RefundBody(List.of(new RefundTransaction(
                         order.transactions().payments().getFirst().id(), format(request.amount())))));
             }
-            return toRefundResult(refundCall.retrieve().body(Order.class));
+            return toRefundResult(refundCall.retrieve().body(Order.class), request.amount());
         } catch (HttpClientErrorException e) {
             log.warn("Mercado Pago rejected refund {}: {} {}", request.reference(), e.getStatusCode(),
                     e.getResponseBodyAsString());
@@ -192,12 +192,23 @@ public class MercadoPagoPaymentGateway implements PaymentGateway {
         };
     }
 
-    private static GatewayResult toRefundResult(Order order) {
+    // Devuelve el monto devuelto tal como lo informa Mercado Pago, en negativo (sale dinero hacia el turista).
+    // La order trae sus devoluciones en transactions.refunds; se toma la ultima (la que acabamos de pedir). Si no
+    // viene, se usa el monto pedido.
+    private static GatewayResult toRefundResult(Order order, BigDecimal requested) {
         if (order == null) {
             return GatewayResult.of(Outcome.UNAVAILABLE);
         }
         if ("refunded".equals(order.status()) || "partially_refunded".equals(order.statusDetail())) {
-            return new GatewayResult(Outcome.APPROVED, order.id());
+            BigDecimal refunded = requested;
+            if (order.transactions() != null && order.transactions().refunds() != null
+                    && !order.transactions().refunds().isEmpty()) {
+                String reported = order.transactions().refunds().getLast().amount();
+                if (reported != null) {
+                    refunded = new BigDecimal(reported);
+                }
+            }
+            return new GatewayResult(Outcome.APPROVED, order.id(), refunded.abs().negate().setScale(2, RoundingMode.HALF_UP));
         }
         // Sin un resultado claro la devolucion queda pendiente y se reintenta
         log.warn("Unexpected Mercado Pago refund result for order {}: {} ({})", order.id(), order.status(), order.statusDetail());
@@ -244,7 +255,12 @@ public class MercadoPagoPaymentGateway implements PaymentGateway {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Transactions(List<Transaction> payments) {
+    record Transactions(List<Transaction> payments, List<Refund> refunds) {
+    }
+
+    // Una devolucion de la order: Mercado Pago informa el monto en positivo ("1800.00")
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record Refund(String id, @JsonProperty("transaction_id") String transactionId, String amount, String status) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

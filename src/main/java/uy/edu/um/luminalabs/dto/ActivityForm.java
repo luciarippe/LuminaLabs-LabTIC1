@@ -32,9 +32,14 @@ public class ActivityForm {
     @Size(max = 255, message = "Máximo 255 caracteres.")
     private String address;
 
-    @NotNull(message = "Ingresá la duración.")
-    @Min(value = 10, message = "La duración mínima es de 10 minutos.")
-    @Max(value = 10080, message = "La duración máxima es de una semana (10080 minutos).")
+    // Los tiempos se eligen en horas, de a 30 minutos (HalfHourOption), pero se guardan en minutos
+    public static final int MIN_DURATION_MINUTES = 30;
+    public static final int MAX_DURATION_MINUTES = 24 * 60;
+    public static final int MAX_NOTICE_MINUTES = 7 * 24 * 60;
+
+    @NotNull(message = "Elegí la duración.")
+    @Min(value = MIN_DURATION_MINUTES, message = "La duración mínima es de 0,5 h.")
+    @Max(value = MAX_DURATION_MINUTES, message = "La duración máxima es de 24 h.")
     private Integer durationMinutes;
 
     @NotBlank(message = "Indicá el idioma o los idiomas.")
@@ -64,15 +69,15 @@ public class ActivityForm {
     private List<Long> categoryIds = new ArrayList<>();
 
     // RF-10
-    @NotNull(message = "Indicá hasta cuántos minutos antes se puede reservar (0 = hasta la hora de inicio).")
+    @NotNull(message = "Elegí hasta cuántas horas antes se puede reservar (0 h = hasta la hora de inicio).")
     @Min(value = 0, message = "No puede ser negativo.")
-    @Max(value = 10080, message = "Máximo una semana (10080 minutos).")
+    @Max(value = MAX_NOTICE_MINUTES, message = "Máximo 168 h (una semana).")
     private Integer bookingCutoffMinutes;
 
-    @NotNull(message = "Indicá el plazo de cancelación.")
+    @NotNull(message = "Elegí el plazo de cancelación.")
     @Min(value = 0, message = "No puede ser negativo.")
-    @Max(value = 720, message = "Máximo 720 horas (30 días).")
-    private Integer cancellationDeadlineHours;
+    @Max(value = MAX_NOTICE_MINUTES, message = "Máximo 168 h (una semana).")
+    private Integer cancellationDeadlineMinutes;
 
     @NotNull(message = "Indicá el porcentaje de cargo.")
     @Min(value = 0, message = "Entre 0 y 100.")

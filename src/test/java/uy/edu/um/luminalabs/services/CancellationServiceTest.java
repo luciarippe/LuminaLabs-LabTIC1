@@ -72,7 +72,7 @@ class CancellationServiceTest {
         activity = new Activity();
         activity.setName("Kayak");
         activity.setBusiness(business);
-        activity.setCancellationDeadlineHours(24);
+        activity.setCancellationDeadlineMinutes(24 * 60);
         activity.setCancellationFeePercentage(15);
         // 3 dias antes de la actividad: dentro del plazo de 24 horas
         slot = new Slot(activity, NOW.plusDays(3), new BigDecimal("1333.33"), 10);

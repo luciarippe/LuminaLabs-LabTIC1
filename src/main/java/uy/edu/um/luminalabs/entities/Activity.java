@@ -5,6 +5,7 @@ import org.hibernate.annotations.BatchSize;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import uy.edu.um.luminalabs.dto.HalfHourOption;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -71,9 +72,9 @@ public class Activity {
     @Column(name = "booking_cutoff_minutes", nullable = false)
     private int bookingCutoffMinutes;
 
-    // RF-10: politica de cancelacion
-    @Column(name = "cancellation_deadline_hours", nullable = false)
-    private int cancellationDeadlineHours;
+    // RF-10: politica de cancelacion (minutos antes del inicio hasta los que se cancela con devolucion)
+    @Column(name = "cancellation_deadline_minutes", nullable = false)
+    private int cancellationDeadlineMinutes;
 
     @Column(name = "cancellation_fee_percentage", nullable = false)
     private int cancellationFeePercentage;
@@ -167,14 +168,17 @@ public class Activity {
         return slots.stream().anyMatch(slot -> slot != except && slot.isActive() && slot.getStartTime().equals(startTime));
     }
 
-    // "2 h 30 min", "45 min", "3 h"
+    // Todos los tiempos se muestran en horas: "2,5 h", "0,5 h", "3 h" (ver HalfHourOption)
     public String getDurationLabel() {
-        int hours = durationMinutes / 60;
-        int minutes = durationMinutes % 60;
-        if (hours == 0) {
-            return minutes + " min";
-        }
-        return minutes == 0 ? hours + " h" : hours + " h " + minutes + " min";
+        return HalfHourOption.hoursLabel(durationMinutes);
+    }
+
+    public String getBookingCutoffLabel() {
+        return HalfHourOption.hoursLabel(bookingCutoffMinutes);
+    }
+
+    public String getCancellationDeadlineLabel() {
+        return HalfHourOption.hoursLabel(cancellationDeadlineMinutes);
     }
 
     // Primera categoria, para mostrar como etiqueta en las tarjetas

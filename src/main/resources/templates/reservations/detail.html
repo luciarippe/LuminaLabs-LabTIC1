@@ -96,15 +96,20 @@
                 </th:block>
             </th:block>
 
-            <!-- RF-18: cada intento de pago con su fecha, monto y estado -->
+            <!-- RF-18: cada intento de pago con su fecha, monto y estado. Las devoluciones van en negativo,
+                 con el monto que informo la pasarela (Mercado Pago) al confirmarlas. -->
             <div class="payment-attempts" th:unless="${payments.isEmpty()}">
-                <h4>Intentos de pago</h4>
+                <h4>Movimientos de pago</h4>
                 <ul>
                     <li th:each="payment : ${payments}">
                         <span>
                             <span th:text="|${payment.type.label} · tarjeta terminada en ${payment.cardLastDigits}|">Cobro · tarjeta 1111</span>
                             <small th:text="${#temporals.format(payment.createdAt, 'dd/MM HH:mm:ss')}">17/10 21:00</small>
+                            <small th:if="${payment.refund and payment.status.name() == 'APPROVED'}"
+                                   th:text="|Confirmada por ${@view.gatewayName()}${payment.externalId != null ? ' · ' + payment.externalId : ''}|">Confirmada por Mercado Pago</small>
                         </span>
+                        <strong class="payment-amount nowrap" th:classappend="${payment.refund} ? 'payment-amount--refund'"
+                                th:text="${@view.signedMoney(payment.signedAmount)}">+ $ 2.000</strong>
                         <span class="badge"
                               th:classappend="${payment.status.name() == 'APPROVED'} ? 'badge--approved' : (${payment.status.name() == 'REJECTED'} ? 'badge--denied' : 'badge--pending')"
                               th:text="${payment.status.label}">Aprobado</span>
@@ -144,7 +149,7 @@
                 <span th:text="|el ${#temporals.format(cancellation.cancelledAt, 'dd/MM/yyyy HH:mm')}.|">fecha</span>
                 <dl class="summary-list">
                     <div><dt>Cargo</dt><dd th:text="|$ ${#numbers.formatDecimal(cancellation.feeAmount, 1, 'POINT', 0, 'COMMA')}|">$ 0</dd></div>
-                    <div><dt>Devolución</dt><dd th:text="|$ ${#numbers.formatDecimal(cancellation.refundAmount, 1, 'POINT', 0, 'COMMA')}|">$ 0</dd></div>
+                    <div><dt>Devolución</dt><dd th:text="${cancellation.refundPayment != null} ? ${@view.signedMoney(cancellation.refundPayment.signedAmount)} : '$ 0'">− $ 1.800</dd></div>
                 </dl>
                 <span class="muted small" th:if="${cancellation.refundPayment != null and cancellation.refundPayment.status.name() == 'PENDING'}">
                     La devolución está en proceso: la reintentamos automáticamente hasta que la pasarela la confirme.</span>
@@ -157,8 +162,8 @@
             <div class="reason-box">
                 <strong>Política de cancelación:</strong>
                 <span th:text="${activity.cancellationFeePercentage == 0}
-                        ? |cancelación gratuita hasta ${activity.cancellationDeadlineHours} horas antes del inicio. Después no hay devolución.|
-                        : |hasta ${activity.cancellationDeadlineHours} horas antes del inicio se devuelve el monto menos un cargo del ${activity.cancellationFeePercentage} %. Después no hay devolución.|">Política</span>
+                        ? |cancelación gratuita hasta ${activity.cancellationDeadlineLabel} antes del inicio. Después no hay devolución.|
+                        : |hasta ${activity.cancellationDeadlineLabel} antes del inicio se devuelve el monto menos un cargo del ${activity.cancellationFeePercentage} %. Después no hay devolución.|">Política</span>
             </div>
         </aside>
     </div>

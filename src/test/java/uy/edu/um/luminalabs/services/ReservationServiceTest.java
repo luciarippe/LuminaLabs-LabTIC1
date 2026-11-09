@@ -142,7 +142,7 @@ class ReservationServiceTest {
         ReservationNotPossibleException exception = assertThrows(ReservationNotPossibleException.class,
                 () -> service.create(TOURIST_ID, form(LocalDate.of(1990, 1, 1))));
 
-        assertTrue(exception.getMessage().contains("60 minutos"));
+        assertTrue(exception.getMessage().contains("hasta 1 h antes"));
     }
 
     @Test

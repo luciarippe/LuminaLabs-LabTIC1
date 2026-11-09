@@ -13,6 +13,7 @@ import uy.edu.um.luminalabs.repositories.ActivityCategoryRepository;
 import uy.edu.um.luminalabs.repositories.ActivityRepository;
 import uy.edu.um.luminalabs.repositories.BusinessRepository;
 import uy.edu.um.luminalabs.repositories.LocationRepository;
+import uy.edu.um.luminalabs.repositories.ReservationRepository;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -40,6 +41,8 @@ class ProviderActivityServiceTest {
     private LocationRepository locationRepository;
     @Mock
     private ActivityCategoryRepository categoryRepository;
+    @Mock
+    private ReservationRepository reservationRepository;
 
     private ProviderActivityService service;
 
@@ -52,7 +55,7 @@ class ProviderActivityServiceTest {
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         service = new ProviderActivityService(activityRepository, businessRepository, locationRepository,
-                categoryRepository, clock, new ImageProcessor(clock));
+                categoryRepository, reservationRepository, clock, new ImageProcessor(clock));
 
         Provider provider = new Provider();
         provider.setId(PROVIDER_ID);
@@ -78,7 +81,7 @@ class ProviderActivityServiceTest {
         form.setEquipment("   ");
         form.setCategoryIds(List.of(20L));
         form.setBookingCutoffMinutes(60);
-        form.setCancellationDeadlineHours(24);
+        form.setCancellationDeadlineMinutes(24 * 60);
         form.setCancellationFeePercentage(10);
     }
 
@@ -158,5 +161,44 @@ class ProviderActivityServiceTest {
         when(activityRepository.findWithBusinessById(5L)).thenReturn(Optional.of(activity));
 
         assertThrows(IllegalStateException.class, () -> service.update(PROVIDER_ID, 5L, form));
+    }
+
+    // Los tiempos se eligen de a media hora
+    @Test
+    void rejectsTimesThatAreNotHalfHours() {
+        lookupsSucceed();
+        form.setDurationMinutes(45);
+
+        FieldValidationException exception = assertThrows(FieldValidationException.class,
+                () -> service.create(PROVIDER_ID, form));
+
+        assertTrue(exception.getFieldErrors().containsKey("durationMinutes"));
+    }
+
+    // Una actividad sin reservas se puede borrar
+    @Test
+    void deletesActivityWithoutReservations() {
+        Activity activity = new Activity();
+        activity.setId(5L);
+        activity.setName("Trekking");
+        activity.setBusiness(business);
+        when(activityRepository.findWithBusinessById(5L)).thenReturn(Optional.of(activity));
+        when(reservationRepository.existsBySlot_Activity_Id(5L)).thenReturn(false);
+
+        assertEquals("Trekking", service.delete(PROVIDER_ID, 5L));
+        verify(activityRepository).delete(activity);
+    }
+
+    // Con alguna reserva (en cualquier estado) no se borra
+    @Test
+    void cannotDeleteActivityWithReservations() {
+        Activity activity = new Activity();
+        activity.setId(5L);
+        activity.setBusiness(business);
+        when(activityRepository.findWithBusinessById(5L)).thenReturn(Optional.of(activity));
+        when(reservationRepository.existsBySlot_Activity_Id(5L)).thenReturn(true);
+
+        assertThrows(IllegalStateException.class, () -> service.delete(PROVIDER_ID, 5L));
+        verify(activityRepository, never()).delete(any(Activity.class));
     }
 }

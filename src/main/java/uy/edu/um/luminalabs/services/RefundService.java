@@ -73,7 +73,7 @@ public class RefundService {
             Payment refund = paymentRepository.findByIdForUpdate(refundId).orElseThrow();
             if (refund.getStatus() == PaymentStatus.PENDING) {
                 if (result.outcome() == Outcome.APPROVED) {
-                    refund.approve(result.externalId(), LocalDateTime.now(clock));
+                    refund.approveRefund(result.externalId(), result.amount(), LocalDateTime.now(clock));
                 } else {
                     // 8a: queda pendiente y la reintenta el proceso automatico
                     log.warn("Refund {} not completed ({}), will retry", request.reference(), result.outcome());

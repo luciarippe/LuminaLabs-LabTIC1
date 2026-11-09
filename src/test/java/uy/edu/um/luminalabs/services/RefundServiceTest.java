@@ -75,6 +75,17 @@ class RefundServiceTest {
         assertEquals("gw-refund", refund.getExternalId());
     }
 
+    // La devolucion queda registrada como un movimiento negativo, con el monto que informo la pasarela
+    @Test
+    void approvedRefundKeepsTheNegativeAmountReportedByTheGateway() {
+        when(gateway.refund(any())).thenReturn(new GatewayResult(Outcome.APPROVED, "gw-refund", new BigDecimal("-8.50")));
+
+        service.processRefund(50L);
+
+        assertEquals(new BigDecimal("-8.50"), refund.getGatewayAmount());
+        assertEquals(new BigDecimal("-8.50"), refund.getSignedAmount());
+    }
+
     // 8a: si falla, queda pendiente para reintentarla
     @Test
     void failedRefundStaysPending() {

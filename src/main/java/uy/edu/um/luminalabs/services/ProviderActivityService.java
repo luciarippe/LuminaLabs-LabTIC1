@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import uy.edu.um.luminalabs.dto.ActivityForm;
+import uy.edu.um.luminalabs.dto.HalfHourOption;
 import uy.edu.um.luminalabs.entities.Activity;
 import uy.edu.um.luminalabs.entities.ActivityCategory;
 import uy.edu.um.luminalabs.entities.Business;
@@ -16,6 +17,7 @@ import uy.edu.um.luminalabs.repositories.ActivityCategoryRepository;
 import uy.edu.um.luminalabs.repositories.ActivityRepository;
 import uy.edu.um.luminalabs.repositories.BusinessRepository;
 import uy.edu.um.luminalabs.repositories.LocationRepository;
+import uy.edu.um.luminalabs.repositories.ReservationRepository;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -24,6 +26,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 // CU-03: el prestador publica y modifica actividades de sus emprendimientos.
 // Reglas de acceso (RNF-10 y RF-06): solo sobre emprendimientos propios, y para publicar o modificar
@@ -37,6 +41,7 @@ public class ProviderActivityService {
     private final BusinessRepository businessRepository;
     private final LocationRepository locationRepository;
     private final ActivityCategoryRepository categoryRepository;
+    private final ReservationRepository reservationRepository;
     private final Clock clock;
     private final ImageProcessor imageProcessor;
 
@@ -103,6 +108,34 @@ public class ProviderActivityService {
         return activity;
     }
 
+    // Una actividad se puede borrar solo si nunca tuvo reservas (en ningun estado): las reservas, pagos y
+    // valoraciones quedan ligados a ella y no se pueden perder. Sin reservas, se borran tambien sus horarios y fotos.
+    public boolean canDelete(Activity activity) {
+        return !reservationRepository.existsBySlot_Activity_Id(activity.getId());
+    }
+
+    // Ids de las actividades de la lista que se pueden borrar (las que no tienen ninguna reserva)
+    public Set<Long> findDeletableIds(List<Activity> activities) {
+        Set<Long> ids = activities.stream().map(Activity::getId).collect(Collectors.toCollection(HashSet::new));
+        if (!ids.isEmpty()) {
+            reservationRepository.findActivityIdsWithReservations(ids).forEach(ids::remove);
+        }
+        return ids;
+    }
+
+    // Devuelve el nombre de la actividad borrada, para el mensaje de confirmacion
+    @Transactional
+    public String delete(Long providerId, Long activityId) {
+        Activity activity = findOwnActivity(providerId, activityId);
+        if (!canDelete(activity)) {
+            throw new IllegalStateException("La actividad \"" + activity.getName() + "\" tiene reservas, por eso no se "
+                    + "puede borrar. Si no querés que se siga reservando, cancelá sus horarios próximos.");
+        }
+        activity.getCategories().clear();
+        activityRepository.delete(activity);
+        return activity.getName();
+    }
+
     // Procesa las fotos subidas (las vacias se ignoran) y controla el maximo por actividad. Los problemas van a
     // "errors" con la clave "photos".
     private List<StoredImage> processPhotos(Activity activity, ActivityForm form, List<MultipartFile> uploads,
@@ -146,7 +179,7 @@ public class ProviderActivityService {
         form.setImportantDetails(activity.getImportantDetails());
         form.setCategoryIds(activity.getCategories().stream().map(ActivityCategory::getId).toList());
         form.setBookingCutoffMinutes(activity.getBookingCutoffMinutes());
-        form.setCancellationDeadlineHours(activity.getCancellationDeadlineHours());
+        form.setCancellationDeadlineMinutes(activity.getCancellationDeadlineMinutes());
         form.setCancellationFeePercentage(activity.getCancellationFeePercentage());
         return form;
     }
@@ -155,6 +188,12 @@ public class ProviderActivityService {
         if (!activity.getBusiness().isApproved()) {
             throw new IllegalStateException("El emprendimiento " + activity.getBusiness().getLegalName()
                     + " no está aprobado: no se pueden publicar ni modificar sus actividades.");
+        }
+    }
+
+    private static void requireHalfHours(Map<String, String> errors, String field, Integer minutes) {
+        if (minutes != null && minutes % HalfHourOption.STEP_MINUTES != 0) {
+            errors.put(field, "Elegí un valor de la lista (de a media hora).");
         }
     }
 
@@ -169,6 +208,10 @@ public class ProviderActivityService {
         if (categories.isEmpty() || categories.size() != categoryIds.size()) {
             errors.put("categoryIds", "Elegí al menos una categoría de la lista.");
         }
+        // Todos los tiempos van de a media hora (las listas del formulario solo ofrecen esos valores)
+        requireHalfHours(errors, "durationMinutes", form.getDurationMinutes());
+        requireHalfHours(errors, "bookingCutoffMinutes", form.getBookingCutoffMinutes());
+        requireHalfHours(errors, "cancellationDeadlineMinutes", form.getCancellationDeadlineMinutes());
         if (!errors.isEmpty()) {
             throw new FieldValidationException(errors);
         }
@@ -186,7 +229,7 @@ public class ProviderActivityService {
         activity.setImportantDetails(trimToNull(form.getImportantDetails()));
         activity.setCategories(new HashSet<>(categories));
         activity.setBookingCutoffMinutes(form.getBookingCutoffMinutes());
-        activity.setCancellationDeadlineHours(form.getCancellationDeadlineHours());
+        activity.setCancellationDeadlineMinutes(form.getCancellationDeadlineMinutes());
         activity.setCancellationFeePercentage(form.getCancellationFeePercentage());
     }
 

@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uy.edu.um.luminalabs.dto.HalfHourOption;
 import uy.edu.um.luminalabs.dto.SlotForm;
 import uy.edu.um.luminalabs.dto.SlotRepetition;
 import uy.edu.um.luminalabs.entities.Activity;
@@ -289,6 +290,10 @@ public class ProviderSlotService {
     // Futura y dentro del limite de meses. checkDuplicate: si ya hay otro horario activo a esa hora es un error
     // (al repetir no, porque esa fecha se saltea)
     private LocalDateTime validateStartTime(Activity activity, LocalDateTime startTime, Slot current, boolean checkDuplicate) {
+        // Las horas de inicio van de a media hora (09:00, 09:30, ...), como ofrece la lista del formulario
+        if (!HalfHourOption.isOnHalfHour(startTime.toLocalTime())) {
+            throw new FieldValidationException(Map.of("time", "Elegí una hora de la lista (de a media hora)."));
+        }
         if (!startTime.isAfter(LocalDateTime.now(clock))) {
             throw new FieldValidationException(Map.of("date", "La fecha y hora tienen que ser futuras."));
         }

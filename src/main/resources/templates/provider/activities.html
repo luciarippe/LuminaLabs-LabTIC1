@@ -75,6 +75,12 @@
                             <a class="btn btn--sm" th:classappend="${runningOutFilter} ? 'btn--primary'"
                                th:href="@{/provider/activities/{id}(id=${activity.id})}"
                                th:text="${runningOutFilter} ? 'Cargar horarios' : 'Gestionar'">Gestionar</a>
+                            <!-- Solo las que no tienen ninguna reserva se pueden borrar -->
+                            <form th:if="${deletableIds.contains(activity.id)}" method="post" class="inline-form"
+                                  th:action="@{/provider/activities/{id}/delete(id=${activity.id})}"
+                                  th:attr="data-confirm=|¿Borrar la actividad ${activity.name}? Se borran también sus horarios y fotos. No se puede deshacer.|">
+                                <button type="submit" class="btn btn--sm btn--danger">Borrar</button>
+                            </form>
                         </td>
                     </tr>
                     </tbody>

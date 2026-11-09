@@ -21,6 +21,12 @@
                     Ver en el portal <svg th:replace="~{fragments/icons :: icon-sized('external', 'icon--sm')}"></svg>
                 </a>
                 <a class="btn btn--dark" th:if="${editable}" th:href="@{/provider/activities/{id}/edit(id=${activity.id})}">Editar actividad</a>
+                <!-- Solo si la actividad no tiene ninguna reserva -->
+                <form th:if="${canDelete}" method="post" class="inline-form"
+                      th:action="@{/provider/activities/{id}/delete(id=${activity.id})}"
+                      th:attr="data-confirm=|¿Borrar la actividad ${activity.name}? Se borran también sus horarios y fotos. No se puede deshacer.|">
+                    <button type="submit" class="btn btn--danger">Borrar actividad</button>
+                </form>
             </div>
         </div>
 
@@ -157,12 +163,12 @@
                         <div class="info-item">
                             <svg th:replace="~{fragments/icons :: icon-sized('clock', 'icon--sm')}"></svg>
                             <div><dt>Reservas hasta</dt>
-                                <dd th:text="${activity.bookingCutoffMinutes == 0} ? 'La hora de inicio' : |${activity.bookingCutoffMinutes} minutos antes del inicio|">60 minutos antes</dd></div>
+                                <dd th:text="${activity.bookingCutoffMinutes == 0} ? 'La hora de inicio' : |${activity.bookingCutoffLabel} antes del inicio|">1 h antes</dd></div>
                         </div>
                         <div class="info-item">
                             <svg th:replace="~{fragments/icons :: icon-sized('refresh', 'icon--sm')}"></svg>
                             <div><dt>Cancelación con devolución</dt>
-                                <dd th:text="|Hasta ${activity.cancellationDeadlineHours} h antes, con un cargo del ${activity.cancellationFeePercentage} %|">Hasta 24 h antes</dd></div>
+                                <dd th:text="|Hasta ${activity.cancellationDeadlineLabel} antes, con un cargo del ${activity.cancellationFeePercentage} %|">Hasta 24 h antes</dd></div>
                         </div>
                     </dl>
                     <div class="info-block" th:if="${activity.inclusions}"><h4>Qué incluye</h4><p th:text="${activity.inclusions}">Incluye</p></div>

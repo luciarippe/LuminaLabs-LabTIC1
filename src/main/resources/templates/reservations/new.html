@@ -115,8 +115,8 @@
                 <p class="muted small">Al confirmar te guardamos los lugares por 2 horas para que completes el pago.
                     La reserva queda confirmada cuando el pago es aprobado.</p>
                 <p class="muted small" th:text="${activity.cancellationFeePercentage == 0}
-                        ? |Cancelación gratuita hasta ${activity.cancellationDeadlineHours} horas antes del inicio.|
-                        : |Si cancelás hasta ${activity.cancellationDeadlineHours} horas antes, se cobra un cargo del ${activity.cancellationFeePercentage} %. Después no hay devolución.|">Política</p>
+                        ? |Cancelación gratuita hasta ${activity.cancellationDeadlineLabel} antes del inicio.|
+                        : |Si cancelás hasta ${activity.cancellationDeadlineLabel} antes, se cobra un cargo del ${activity.cancellationFeePercentage} %. Después no hay devolución.|">Política</p>
             </div>
         </aside>
     </div>
